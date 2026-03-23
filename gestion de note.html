@@ -1,0 +1,2804 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PERMIS TIC - Centre de Formation Professionnelle</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Reset et styles globaux */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #2E7D32;
+            --accent-color: #FFC107;
+            --danger-color: #F44336;
+            --light-bg: #f8f9fa;
+            --dark-text: #212529;
+            --gray-text: #6c757d;
+            --sidebar-width: 280px;
+            --navbar-height: 70px;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            
+            --bg-color: #f5f7fb;
+            --card-bg: white;
+            --text-color: #212529;
+            --border-color: #ddd;
+            --table-header-bg: #f8f9fa;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        body.dark-mode {
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+            --text-color: #eee;
+            --border-color: #2d3748;
+            --table-header-bg: #0f3460;
+        }
+        
+        body.dark-mode .dashboard-card,
+        body.dark-mode .stat-card,
+        body.dark-mode .admin-table,
+        body.dark-mode .formation-card,
+        body.dark-mode .lesson-card,
+        body.dark-mode .modal-content {
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+        
+        body.dark-mode table td,
+        body.dark-mode table th {
+            border-color: var(--border-color);
+        }
+        
+        body.dark-mode .form-control,
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode textarea {
+            background: #0f0f23;
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* HEADER PUBLIC */
+        .public-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-circle {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 24px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .logo-text h1 {
+            font-size: 1.8rem;
+            margin: 0;
+        }
+        
+        .logo-text p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+        }
+        
+        .btn-outline:hover {
+            background: white;
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, rgba(76,175,80,0.1), rgba(46,125,50,0.1));
+            padding: 60px 20px;
+            text-align: center;
+        }
+        
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .hero-title {
+            font-size: 2.8rem;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.3rem;
+            color: var(--gray-text);
+            margin-bottom: 40px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .stats-container {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            margin-top: 50px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            color: var(--gray-text);
+            font-size: 1.1rem;
+        }
+        
+        .section {
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2.2rem;
+            color: var(--secondary-color);
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .section-title:after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: var(--accent-color);
+            margin: 15px auto;
+        }
+        
+        .formations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+        }
+        
+        .formation-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-top: 4px solid var(--primary-color);
+        }
+        
+        .formation-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px;
+        }
+        
+        .card-header h3 {
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+        
+        .card-header .niveau {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .card-info {
+            margin-bottom: 15px;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            color: var(--gray-text);
+        }
+        
+        .info-item i {
+            width: 20px;
+            color: var(--primary-color);
+        }
+        
+        .card-footer {
+            padding: 15px 20px;
+            background: var(--light-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .btn-inscription {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        
+        .btn-inscription:hover {
+            background: var(--secondary-color);
+        }
+        
+        .lessons-section {
+            background: var(--light-bg);
+        }
+        
+        .lessons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        }
+        
+        .lesson-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.3s;
+        }
+        
+        .lesson-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .lesson-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+        
+        .lesson-formation {
+            font-size: 0.8rem;
+            color: var(--gray-text);
+            margin-bottom: 10px;
+            display: inline-block;
+            background: rgba(76,175,80,0.1);
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+        
+        .lesson-content {
+            color: var(--gray-text);
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+        
+        .lesson-resources {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .resource-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(76,175,80,0.1);
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 0.85rem;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+        
+        .resource-link:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .testimonials {
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+        }
+        
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        
+        .testimonial-card {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .testimonial-text {
+            font-style: italic;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .testimonial-author {
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 30px;
+            position: relative;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .modal-header h2 {
+            color: var(--secondary-color);
+        }
+        
+        .close-modal {
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--gray-text);
+            transition: color 0.3s;
+        }
+        
+        .close-modal:hover {
+            color: var(--danger-color);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            background: var(--card-bg);
+            color: var(--text-color);
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn-submit:hover {
+            background: var(--secondary-color);
+        }
+        
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .success-message {
+            background: rgba(76,175,80,0.2);
+            color: var(--secondary-color);
+            border: 1px solid var(--primary-color);
+        }
+        
+        .error-message {
+            background: rgba(244,67,54,0.2);
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+        }
+        
+        .public-footer {
+            background: var(--secondary-color);
+            color: white;
+            padding: 40px 0 20px;
+        }
+        
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+        
+        .footer-section h3 {
+            margin-bottom: 20px;
+            color: var(--accent-color);
+        }
+        
+        .footer-section p {
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .footer-section i {
+            margin-right: 10px;
+            color: var(--accent-color);
+        }
+        
+        .copyright {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        /* ADMIN */
+        .admin-login {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+        
+        .login-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        .login-card h2 {
+            text-align: center;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+        
+        .login-card p {
+            text-align: center;
+            color: var(--gray-text);
+            margin-bottom: 30px;
+        }
+        
+        .admin-container {
+            display: none;
+            min-height: 100vh;
+        }
+        
+        .admin-sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--secondary-color), #1B5E20);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .admin-logo {
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .admin-logo .logo-circle {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+            font-size: 28px;
+        }
+        
+        .admin-logo h2 {
+            color: white;
+            margin: 10px 0 0;
+            font-size: 1.3rem;
+        }
+        
+        .admin-menu {
+            list-style: none;
+            padding: 20px 0;
+        }
+        
+        .admin-menu li {
+            padding: 14px 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 5px 10px;
+            border-radius: 10px;
+        }
+        
+        .admin-menu li:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateX(5px);
+        }
+        
+        .admin-menu li.active {
+            background: rgba(255,255,255,0.25);
+            border-left: 3px solid var(--accent-color);
+        }
+        
+        .admin-menu li i {
+            width: 24px;
+            font-size: 1.2rem;
+        }
+        
+        .admin-main {
+            margin-left: var(--sidebar-width);
+            padding: 25px;
+            background: var(--bg-color);
+            min-height: 100vh;
+        }
+        
+        .admin-header {
+            background: var(--card-bg);
+            padding: 20px 25px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--card-shadow);
+            flex-wrap: wrap;
+        }
+        
+        .admin-header h2 {
+            color: var(--secondary-color);
+            font-size: 1.5rem;
+        }
+        
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            border-top: 4px solid var(--primary-color);
+            transition: transform 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .stat-card h3 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+        
+        .stat-card p {
+            color: var(--gray-text);
+            font-size: 0.9rem;
+        }
+        
+        .admin-table {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 25px;
+            overflow-x: auto;
+            box-shadow: var(--card-shadow);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        th {
+            background: var(--table-header-bg);
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+        
+        .btn-logout {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-logout:hover {
+            background: #d32f2f;
+            transform: translateY(-2px);
+        }
+        
+        .btn-back {
+            background: var(--gray-text);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            margin: 2px;
+            border-radius: 6px;
+        }
+        
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background: rgba(76,175,80,0.2);
+            color: #4CAF50;
+        }
+        
+        .status-warning {
+            background: rgba(255,193,7,0.2);
+            color: #FFC107;
+        }
+        
+        .status-admis {
+            background: rgba(76,175,80,0.2);
+            color: #4CAF50;
+        }
+        
+        .status-ajourne {
+            background: rgba(244,67,54,0.2);
+            color: #F44336;
+        }
+        
+        .category-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(76,175,80,0.2);
+            color: #4CAF50;
+        }
+        
+        .level-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+        
+        .edit-btn {
+            background: rgba(76,175,80,0.2);
+            color: #4CAF50;
+        }
+        
+        .edit-btn:hover {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .delete-btn {
+            background: rgba(244,67,54,0.2);
+            color: #F44336;
+        }
+        
+        .delete-btn:hover {
+            background: #F44336;
+            color: white;
+        }
+        
+        .resource-badge {
+            background: rgba(33,150,243,0.2);
+            color: #2196F3;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-right: 5px;
+        }
+        
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 3000;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .language-selector, .theme-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .lang-btn, .theme-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--primary-color);
+            background: var(--card-bg);
+            color: var(--primary-color);
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .lang-btn.active, .theme-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .lang-btn:hover, .theme-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        .auth-page {
+            display: none;
+        }
+        
+        .auth-page.active {
+            display: block;
+        }
+        
+        .password-input-container {
+            position: relative;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6c757d;
+            cursor: pointer;
+        }
+        
+        .btn-print {
+            background: var(--accent-color);
+            color: var(--dark-text);
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-print:hover {
+            background: #e0a800;
+            transform: translateY(-2px);
+        }
+        
+        .btn-download {
+            background: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-download:hover {
+            background: #0b7dda;
+            transform: translateY(-2px);
+        }
+        
+        .bulletin-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .stats-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+            .admin-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+                z-index: 1001;
+            }
+            .admin-sidebar.active {
+                transform: translateX(0);
+            }
+            .admin-main {
+                margin-left: 0;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .file-upload-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .file-upload-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--card-bg);
+        }
+        
+        .upload-btn {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        /* Style pour le bulletin */
+        .bulletin-modal .modal-content {
+            max-width: 900px;
+        }
+        
+        .bulletin-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .bulletin-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .bulletin-logo .logo-circle {
+            width: 60px;
+            height: 60px;
+            font-size: 28px;
+        }
+        
+        .bulletin-title {
+            text-align: center;
+        }
+        
+        .bulletin-title h3 {
+            color: var(--secondary-color);
+            margin: 5px 0;
+        }
+        
+        .bulletin-info {
+            background: var(--light-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .bulletin-info p {
+            margin: 8px 0;
+        }
+        
+        .bulletin-moyenne {
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .moyenne-admis {
+            background: rgba(76,175,80,0.2);
+            color: #4CAF50;
+        }
+        
+        .moyenne-ajourne {
+            background: rgba(244,67,54,0.2);
+            color: #F44336;
+        }
+        
+        .statut-badge-large {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .bulletin-footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--gray-text);
+        }
+        
+        @media print {
+            .modal {
+                position: relative;
+                display: block !important;
+                background: white;
+            }
+            .modal-content {
+                box-shadow: none;
+                padding: 0;
+                max-width: 100%;
+            }
+            .bulletin-actions,
+            .close-modal,
+            .admin-header,
+            .admin-sidebar,
+            .btn-logout {
+                display: none !important;
+            }
+            body {
+                background: white;
+            }
+            .bulletin-modal .modal-content {
+                margin: 0;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loader -->
+    <div id="loader" style="position: fixed; top:0; left:0; width:100%; height:100%; background: linear-gradient(135deg, #4CAF50, #2E7D32); display: flex; justify-content: center; align-items: center; z-index: 10000;">
+        <div class="loader-content">
+            <div class="logo-circle" style="margin: 0 auto 20px; width: 80px; height: 80px; font-size: 40px; background: white; color: #4CAF50;">PT</div>
+            <h2 style="color:white;">PERMIS TIC</h2>
+            <p style="color:white;">Centre National de Formation Professionnelle</p>
+            <div class="loader-spinner"></div>
+        </div>
+    </div>
+
+    <!-- PARTIE PUBLIQUE -->
+    <div id="public-section">
+        <header class="public-header">
+            <div class="header-container">
+                <div class="logo">
+                    <div class="logo-circle">PT</div>
+                    <div class="logo-text">
+                        <h1>PERMIS TIC</h1>
+                        <p>Centre de Formation Professionnelle</p>
+                    </div>
+                </div>
+                <div class="nav-buttons">
+                    <button class="btn btn-outline" onclick="scrollToFormations()">Nos formations</button>
+                    <button class="btn btn-outline" onclick="scrollToLessons()">Contenus pédagogiques</button>
+                    <button class="btn btn-primary" onclick="showInscriptionEnLigne()">S'inscrire en ligne</button>
+                    <button class="btn btn-outline" onclick="showAdminLogin()">Espace Administrateur</button>
+                </div>
+            </div>
+        </header>
+
+        <section class="hero-section">
+            <div class="hero-container">
+                <h1 class="hero-title">Formez-vous aux métiers du numérique</h1>
+                <p class="hero-subtitle">Des formations adaptées à tous les niveaux, du débutant à l'expert, pour maîtriser les outils TIC et construire votre avenir professionnel.</p>
+                <div class="stats-container">
+                    <div class="stat-item"><div class="stat-number" id="totalFormations">0</div><div class="stat-label">Formations</div></div>
+                    <div class="stat-item"><div class="stat-number" id="totalApprenants">0</div><div class="stat-label">Apprenants formés</div></div>
+                    <div class="stat-item"><div class="stat-number" id="totalFormateurs">0</div><div class="stat-label">Formateurs experts</div></div>
+                    <div class="stat-item"><div class="stat-number" id="tauxReussite">0%</div><div class="stat-label">Taux de réussite</div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="formations-section">
+            <h2 class="section-title">Nos formations</h2>
+            <div class="formations-grid" id="formations-list"></div>
+        </section>
+
+        <section class="section lessons-section" id="lessons-section">
+            <h2 class="section-title">📚 Contenus pédagogiques</h2>
+            <div id="lessons-list" class="lessons-grid"></div>
+        </section>
+
+        <section class="section testimonials">
+            <h2 class="section-title" style="color: white;">Ce que disent nos apprenants</h2>
+            <div class="testimonials-grid" id="testimonials-list"></div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Contactez-nous</h2>
+            <div id="contact-info" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px;"></div>
+        </section>
+
+        <footer class="public-footer">
+            <div class="footer-container" id="footer-content"></div>
+            <div class="copyright"><p>&copy; 2024 PERMIS TIC - Tous droits réservés</p></div>
+        </footer>
+    </div>
+
+    <!-- MODAL D'INSCRIPTION EN LIGNE -->
+    <div id="inscriptionEnLigneModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Inscription en ligne</h2>
+                <span class="close-modal" onclick="closeModal('inscriptionEnLigneModal')">&times;</span>
+            </div>
+            <form id="inscriptionEnLigneForm">
+                <div class="form-row">
+                    <div class="form-group"><label>Nom *</label><input type="text" id="insc-nom" required></div>
+                    <div class="form-group"><label>Prénom *</label><input type="text" id="insc-prenom" required></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Email *</label><input type="email" id="insc-email" required></div>
+                    <div class="form-group"><label>Téléphone *</label><input type="tel" id="insc-telephone" maxlength="10" placeholder="0612345678" required><small>10 chiffres uniquement</small></div>
+                </div>
+                <div class="form-group"><label>Formation *</label><select id="insc-formation" required><option value="">Sélectionnez</option></select></div>
+                <div class="form-group"><label>Message</label><textarea id="insc-message" rows="3"></textarea></div>
+                <div id="inscMessageResult" class="message"></div>
+                <button type="submit" class="btn-submit">Envoyer ma demande</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAGE ADMIN LOGIN -->
+    <div id="adminLogin" class="admin-login" style="display: none;">
+        <div class="login-card">
+            <h2>Espace Administrateur</h2>
+            <p>Connectez-vous pour gérer l'application</p>
+            <form id="loginForm">
+                <div class="form-group"><label>Nom d'utilisateur</label><input type="text" id="adminUsername" required></div>
+                <div class="form-group"><label>Mot de passe</label><div class="password-input-container"><input type="password" id="adminPassword" required><button type="button" class="toggle-password" data-target="adminPassword"><i class="fas fa-eye"></i></button></div></div>
+                <div id="loginMessage" class="message error-message"></div>
+                <button type="submit" class="btn-submit">Se connecter</button>
+            </form>
+            <button class="btn-back" onclick="backToPublic()" style="margin-top:15px;">Retour au site</button>
+        </div>
+    </div>
+
+    <!-- PAGE ADMIN DASHBOARD -->
+    <div id="adminDashboard" class="admin-container">
+        <div class="admin-sidebar" id="adminSidebar">
+            <div class="admin-logo"><div class="logo-circle">PT</div><h2>Administration</h2></div>
+            <ul class="admin-menu">
+                <li class="active" onclick="showAdminPage('dashboard', this)"><i class="fas fa-tachometer-alt"></i> Tableau de bord</li>
+                <li onclick="showAdminPage('inscriptions', this)"><i class="fas fa-clipboard-list"></i> Inscriptions</li>
+                <li onclick="showAdminPage('apprenants', this)"><i class="fas fa-users"></i> Apprenants</li>
+                <li onclick="showAdminPage('formations', this)"><i class="fas fa-book"></i> Formations</li>
+                <li onclick="showAdminPage('lecons', this)"><i class="fas fa-chalkboard"></i> Leçons & Contenus</li>
+                <li onclick="showAdminPage('formateurs', this)"><i class="fas fa-chalkboard-teacher"></i> Formateurs</li>
+                <li onclick="showAdminPage('notes', this)"><i class="fas fa-star"></i> Gestion des notes</li>
+                <li onclick="showAdminPage('parametres', this)"><i class="fas fa-cog"></i> Paramètres</li>
+            </ul>
+        </div>
+
+        <div class="admin-main">
+            <div class="admin-header"><h2 id="adminPageTitle">Tableau de bord</h2><button class="btn-logout" onclick="logoutAdmin()"><i class="fas fa-sign-out-alt"></i> Déconnexion</button></div>
+
+            <div id="adminDashboardContent">
+                <div class="admin-stats">
+                    <div class="stat-card">
+                        <h3 id="statInscriptions">0</h3>
+                        <p>Inscriptions en attente</p>
+                        <button class="action-btn edit-btn" onclick="editStatCard('inscriptions')" style="margin-top: 10px;"><i class="fas fa-edit"></i> Modifier</button>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="statApprenants">0</h3>
+                        <p>Apprenants actifs</p>
+                        <button class="action-btn edit-btn" onclick="editStatCard('apprenants')" style="margin-top: 10px;"><i class="fas fa-edit"></i> Modifier</button>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="statFormations">0</h3>
+                        <p>Formations</p>
+                        <button class="action-btn edit-btn" onclick="editStatCard('formations')" style="margin-top: 10px;"><i class="fas fa-edit"></i> Modifier</button>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="statLecons">0</h3>
+                        <p>Leçons disponibles</p>
+                        <button class="action-btn edit-btn" onclick="editStatCard('lecons')" style="margin-top: 10px;"><i class="fas fa-edit"></i> Modifier</button>
+                    </div>
+                </div>
+                <div class="admin-table">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>Dernières inscriptions</h3>
+                        <button class="action-btn edit-btn" onclick="editRecentInscriptions()"><i class="fas fa-edit"></i> Modifier</button>
+                    </div>
+                    <table id="recentInscriptions">
+                        <thead>
+                            <tr><th>Nom</th><th>Prénom</th><th>Formation</th><th>Date</th><th>Actions</th>   </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="adminInscriptionsContent" style="display:none;">
+                <div class="admin-table">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>Gestion des inscriptions</h3>
+                    </div>
+                    <table id="inscriptionsTable">
+                        <thead>
+                            <tr><th>ID</th><th>Nom</th><th>Prénom</th><th>Email</th><th>Téléphone</th><th>Formation</th><th>Date</th><th>Statut</th><th>Actions</th> </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="adminApprenantsContent" style="display:none;">
+                <div class="admin-table">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>Liste des apprenants</h3>
+                    </div>
+                    <table id="apprenantsTable">
+                        <thead>
+                            <tr><th>ID</th><th>Nom</th><th>Prénom</th><th>Email</th><th>Téléphone</th><th>Formations</th><th>Moyenne</th><th>Statut</th><th>Actions</th> </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="adminFormationsContent" style="display:none;">
+                <div class="admin-table">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>Gestion des formations</h3>
+                    </div>
+                    <table id="formationsAdminTable">
+                        <thead>
+                            <tr><th>ID</th><th>Nom</th><th>Catégorie</th><th>Niveau</th><th>Durée</th><th>Formateur</th><th>Statut</th><th>Actions</th> </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div style="margin-top:20px;">
+                        <button class="btn-inscription" onclick="showFormModal()"><i class="fas fa-plus"></i> Ajouter une formation</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="adminLeconsContent" style="display:none;">
+                <div class="admin-table">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>Gestion des leçons et contenus pédagogiques</h3>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <button class="btn-inscription" onclick="showLessonModal()"><i class="fas fa-plus"></i> Ajouter une leçon</button>
+                    </div>
+                    <table id="leconsAdminTable">
+                        <thead>
+                            <tr><th>ID</th><th>Titre</th><th>Formation</th><th>Description</th><th>Ressources</th><th>Actions</th> </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="adminFormateursContent" style="display:none;">
+                <div class="admin-table">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>Gestion des formateurs</h3>
+                    </div>
+                    <table id="formateursAdminTable">
+                        <thead>
+                            <tr><th>ID</th><th>Nom</th><th>Prénom</th><th>Email</th><th>Téléphone</th><th>Spécialité</th><th>Actions</th> </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div style="margin-top:20px;">
+                        <button class="btn-inscription" onclick="showFormateurModal()"><i class="fas fa-plus"></i> Ajouter un formateur</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="adminNotesContent" style="display:none;">
+                <div class="admin-table">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>Gestion des notes</h3>
+                    </div>
+                    <div style="margin-bottom:20px;">
+                        <button class="btn-inscription" onclick="showNoteModal()"><i class="fas fa-plus"></i> Ajouter une note</button>
+                    </div>
+                    <table id="notesAdminTable">
+                        <thead>
+                            <tr><th>ID</th><th>Apprenant</th><th>Formation</th><th>Note /20</th><th>Date</th><th>Actions</th> </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="adminParametresContent" style="display:none; width: 100%;">
+                <div class="admin-table" style="width: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>Informations du centre</h3>
+                        <button class="action-btn edit-btn" onclick="editCentreInfo()"><i class="fas fa-edit"></i> Modifier les informations</button>
+                    </div>
+                    <form id="centreInfoForm">
+                        <div class="form-group"><label>Adresse</label><input type="text" id="centreAdresse" class="form-control"></div>
+                        <div class="form-group"><label>Téléphone</label><input type="text" id="centreTelephone" class="form-control"></div>
+                        <div class="form-group"><label>Email</label><input type="email" id="centreEmail" class="form-control"></div>
+                        <div class="form-group"><label>Texte du footer</label><textarea id="centreFooterText" class="form-control" rows="2"></textarea></div>
+                        <button type="submit" class="btn-inscription">Enregistrer les informations</button>
+                    </form>
+                    
+                    <h3 style="margin-top: 30px;">🌐 Langue de l'interface</h3>
+                    <div class="language-selector">
+                        <button type="button" class="lang-btn" data-lang="fr">Français</button>
+                        <button type="button" class="lang-btn" data-lang="en">English</button>
+                        <button type="button" class="lang-btn" data-lang="mg">Malagasy</button>
+                    </div>
+                    
+                    <h3 style="margin-top: 30px;">☀️ Thème (Mode clair / sombre)</h3>
+                    <div class="theme-selector">
+                        <button type="button" class="theme-btn" data-theme="light">Mode clair</button>
+                        <button type="button" class="theme-btn" data-theme="dark">Mode sombre</button>
+                    </div>
+                    
+                    <h3 style="margin-top: 30px;">🔐 Modifier le mot de passe</h3>
+                    <form id="passwordForm">
+                        <div class="form-group"><label>Nouveau mot de passe</label><div class="password-input-container"><input type="password" id="newPassword" class="form-control"><button type="button" class="toggle-password" data-target="newPassword"><i class="fas fa-eye"></i></button></div></div>
+                        <div class="form-group"><label>Confirmer</label><div class="password-input-container"><input type="password" id="confirmPassword" class="form-control"><button type="button" class="toggle-password" data-target="confirmPassword"><i class="fas fa-eye"></i></button></div></div>
+                        <button type="submit" class="btn-inscription">Changer le mot de passe</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL Formation -->
+    <div id="formationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h2>Ajouter/Modifier une formation</h2><span class="close-modal" onclick="closeModal('formationModal')">&times;</span></div>
+            <form id="formationFormAdmin">
+                <input type="hidden" id="formationId">
+                <div class="form-group"><label>Nom</label><input type="text" id="formationNom" required></div>
+                <div class="form-group"><label>Description</label><textarea id="formationDescription" rows="3" required></textarea></div>
+                <div class="form-row"><div class="form-group"><label>Catégorie</label><select id="formationCategorie"><option value="débutant">Débutant</option><option value="intermédiaire">Intermédiaire</option><option value="avancé">Avancé</option></select></div><div class="form-group"><label>Niveau</label><select id="formationNiveau"><option value="base">Base</option><option value="intermédiaire">Intermédiaire</option><option value="avancé">Avancé</option></select></div></div>
+                <div class="form-row"><div class="form-group"><label>Durée (heures)</label><input type="number" id="formationDuree" required min="1"></div><div class="form-group"><label>Places</label><input type="number" id="formationPlaces" required min="1"></div></div>
+                <div class="form-group"><label>Formateur</label><select id="formationFormateurId"><option value="">Sélectionner</option></select></div>
+                <button type="submit" class="btn-submit">Enregistrer</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL Leçon -->
+    <div id="lessonModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h2>Ajouter/Modifier une leçon</h2><span class="close-modal" onclick="closeModal('lessonModal')">&times;</span></div>
+            <form id="lessonFormAdmin">
+                <input type="hidden" id="lessonId">
+                <div class="form-group"><label>Titre de la leçon</label><input type="text" id="lessonTitle" required></div>
+                <div class="form-group"><label>Formation associée</label><select id="lessonFormationId" required></select></div>
+                <div class="form-group"><label>Description / Contenu</label><textarea id="lessonDescription" rows="3" required></textarea></div>
+                <div class="form-group"><label>Ressources pédagogiques</label>
+                    <div id="resourcesContainer">
+                        <div class="resource-item" style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+                            <select class="resource-type" style="width:120px;">
+                                <option value="video">🎬 Vidéo (lien)</option>
+                                <option value="pdf">📄 PDF</option>
+                                <option value="document">📝 Document</option>
+                            </select>
+                            <div class="file-upload-container" style="flex:1;">
+                                <input type="text" class="resource-url" placeholder="URL ou nom du fichier" style="flex:1; min-width:200px;">
+                                <input type="file" class="resource-file" style="display:none;" accept=".pdf,.mp4,.jpg,.png,.doc,.docx">
+                                <button type="button" class="upload-btn btn-sm" onclick="uploadFile(this)"><i class="fas fa-upload"></i> Choisir</button>
+                            </div>
+                            <button type="button" class="btn-danger btn-sm" onclick="this.parentElement.remove()">✖</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-inscription btn-sm" onclick="addResourceField()" style="margin-top:5px;"><i class="fas fa-plus"></i> Ajouter une ressource</button>
+                    <small style="display:block; margin-top:5px;">Pour les vidéos, insérez un lien YouTube. Pour les fichiers, utilisez "Choisir" pour sélectionner depuis votre ordinateur.</small>
+                </div>
+                <button type="submit" class="btn-submit">Enregistrer la leçon</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL Formateur -->
+    <div id="formateurModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h2>Ajouter/Modifier un formateur</h2><span class="close-modal" onclick="closeModal('formateurModal')">&times;</span></div>
+            <form id="formateurFormAdmin">
+                <input type="hidden" id="formateurId">
+                <div class="form-row"><div class="form-group"><label>Nom</label><input type="text" id="formateurNom" required></div><div class="form-group"><label>Prénom</label><input type="text" id="formateurPrenom" required></div></div>
+                <div class="form-row"><div class="form-group"><label>Email</label><input type="email" id="formateurEmail" required></div><div class="form-group"><label>Téléphone</label><input type="tel" id="formateurTelephone" required></div></div>
+                <div class="form-group"><label>Spécialité</label><input type="text" id="formateurSpecialite" required></div>
+                <button type="submit" class="btn-submit">Enregistrer</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL Note -->
+    <div id="noteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h2 id="noteModalTitle">Ajouter/Modifier une note</h2><span class="close-modal" onclick="closeModal('noteModal')">&times;</span></div>
+            <form id="noteFormAdmin">
+                <input type="hidden" id="noteId">
+                <div class="form-group"><label>Apprenant *</label><select id="noteApprenantId" required></select></div>
+                <div class="form-group"><label>Formation *</label><select id="noteFormationId" required></select></div>
+                <div class="form-group"><label>Note /20 *</label><input type="number" id="noteValeur" step="0.5" min="0" max="20" required></div>
+                <div class="form-group"><label>Date *</label><input type="date" id="noteDate" required></div>
+                <button type="submit" class="btn-submit">Enregistrer</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL Bulletin avec impression et téléchargement -->
+    <div id="bulletinModal" class="modal bulletin-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-graduation-cap"></i> Bulletin de notes</h2>
+                <span class="close-modal" onclick="closeModal('bulletinModal')">&times;</span>
+            </div>
+            <div class="bulletin-actions">
+                <button class="btn-print" onclick="printBulletin()"><i class="fas fa-print"></i> Imprimer</button>
+                <button class="btn-download" onclick="downloadBulletinPDF()"><i class="fas fa-download"></i> Télécharger (PDF)</button>
+            </div>
+            <div id="bulletinContent"></div>
+            <div class="bulletin-footer">
+                <p>PERMIS TIC - Centre de Formation Professionnelle - Certificat officiel</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DONNÉES
+        let db = {
+            formations: [
+                { id: 1, nom: "Traitement de texte de base", description: "Maîtrisez les bases du traitement de texte", categorie: "débutant", niveau: "Débutant", duree: 20, places: 15, inscrits: 8, statut: "active", formateurId: 1 },
+                { id: 2, nom: "Tableur avancé", description: "Devenez expert en tableur", categorie: "débutant", niveau: "Avancé", duree: 35, places: 12, inscrits: 6, statut: "active", formateurId: 1 },
+                { id: 3, nom: "Développement Web", description: "Créez des sites web", categorie: "intermédiaire", niveau: "Intermédiaire", duree: 60, places: 10, inscrits: 10, statut: "active", formateurId: 2 }
+            ],
+            inscriptions: [
+                { id: 1, nom: "Dupont", prenom: "Jean", email: "jean@email.com", telephone: "0612345678", formationId: 1, date: "2024-01-15", statut: "en_attente", message: "" },
+                { id: 2, nom: "Martin", prenom: "Marie", email: "marie@email.com", telephone: "0623456789", formationId: 2, date: "2024-01-20", statut: "en_attente", message: "" }
+            ],
+            apprenants: [
+                { id: 1, nom: "Dupont", prenom: "Jean", email: "jean@email.com", telephone: "0612345678", formations: [1], statut: "actif" },
+                { id: 2, nom: "Martin", prenom: "Marie", email: "marie@email.com", telephone: "0623456789", formations: [2], statut: "actif" },
+                { id: 3, nom: "Bernard", prenom: "Pierre", email: "pierre@email.com", telephone: "0634567890", formations: [3], statut: "actif" }
+            ],
+            formateurs: [
+                { id: 1, nom: "Leroy", prenom: "Paul", email: "paul@permis-tic.fr", telephone: "0712345678", specialite: "Bureautique" },
+                { id: 2, nom: "Simon", prenom: "Jacques", email: "jacques@permis-tic.fr", telephone: "0723456789", specialite: "Développement" }
+            ],
+            lecons: [
+                { id: 1, titre: "Introduction à Word", formationId: 1, description: "Les bases de la mise en forme", ressources: [{ type: "video", url: "https://youtu.be/example1" }, { type: "pdf", url: "cours-word.pdf" }] },
+                { id: 2, titre: "Formules Excel avancées", formationId: 2, description: "Maîtrisez les formules complexes", ressources: [{ type: "video", url: "https://youtu.be/example2" }] }
+            ],
+            notes: [
+                { id: 1, apprenantId: 1, formationId: 1, valeur: 15, date: "2024-02-10" },
+                { id: 2, apprenantId: 1, formationId: 1, valeur: 12, date: "2024-02-20" },
+                { id: 3, apprenantId: 2, formationId: 2, valeur: 8, date: "2024-02-15" }
+            ],
+            temoignages: [
+                { auteur: "Jean Dupont", texte: "Grâce à cette formation, j'ai pu décrocher un poste." },
+                { auteur: "Marie Martin", texte: "Une expérience enrichissante." },
+                { auteur: "Pierre Bernard", texte: "Les cours sont bien structurés." }
+            ],
+            siteContent: {
+                address: "123 Avenue de la Formation, 75001 Paris",
+                phone: "01 23 45 67 89",
+                email: "contact@permis-tic.fr",
+                footerText: "Centre de formation professionnelle aux métiers du numérique depuis 2010."
+            }
+        };
+        
+        let adminPassword = "admin123";
+        let isAdminLoggedIn = false;
+        let currentLang = "fr";
+        let currentBulletinApprenant = null;
+        
+        // Traductions
+        const translations = {
+            fr: { 
+                apprenants: "Apprenants", formateurs: "Formateurs", formations: "Formations", 
+                inscriptions: "Inscriptions", lecons: "Leçons", parametres: "Paramètres",
+                dashboard: "Tableau de bord", search: "Rechercher", actions: "Actions",
+                save: "Enregistrer", cancel: "Annuler", delete: "Supprimer", edit: "Modifier",
+                notes: "Gestion des notes"
+            },
+            en: { 
+                apprenants: "Learners", formateurs: "Trainers", formations: "Trainings", 
+                inscriptions: "Registrations", lecons: "Lessons", parametres: "Settings",
+                dashboard: "Dashboard", search: "Search", actions: "Actions",
+                save: "Save", cancel: "Cancel", delete: "Delete", edit: "Edit",
+                notes: "Grade Management"
+            },
+            mg: { 
+                apprenants: "Mpianatra", formateurs: "Mpampianatra", formations: "Fiofanana", 
+                inscriptions: "Fisoratana", lecons: "Lesona", parametres: "Fikirana",
+                dashboard: "Takelatry ny asa", search: "Karohy", actions: "Hetsika",
+                save: "Tehirizo", cancel: "Avelao", delete: "Fafao", edit: "Ovay",
+                notes: "Fitantanana naoty"
+            }
+        };
+        
+        function showToast(msg, isError=false) { 
+            let t=document.createElement('div'); 
+            t.className='toast-notification'; 
+            t.style.backgroundColor=isError?'#F44336':'#4CAF50'; 
+            t.innerHTML=msg; 
+            document.body.appendChild(t); 
+            setTimeout(()=>t.remove(),3000); 
+        }
+        
+        function saveToStorage() { localStorage.setItem('permisTicDB', JSON.stringify(db)); }
+        function loadDataFromStorage() { let saved = localStorage.getItem('permisTicDB'); if(saved) db = JSON.parse(saved); }
+        function formatDate(d) { if(!d) return ''; return new Date(d).toLocaleDateString('fr-FR'); }
+        function generateId(arr) { return arr.length ? Math.max(...arr.map(i=>i.id)) + 1 : 1; }
+        function validatePhone(p) { return /^\d{10}$/.test(p); }
+        
+        // Calcul de la moyenne d'un apprenant
+        function getApprenantMoyenne(apprenantId, formationId = null) {
+            let notes = db.notes.filter(n => n.apprenantId === apprenantId);
+            if (formationId) {
+                notes = notes.filter(n => n.formationId === formationId);
+            }
+            if (notes.length === 0) return null;
+            let sum = notes.reduce((acc, n) => acc + n.valeur, 0);
+            return sum / notes.length;
+        }
+        
+        // Obtenir le statut d'un apprenant
+        function getApprenantStatut(moyenne) {
+            if (moyenne === null) return { text: "Non évalué", class: "status-warning" };
+            if (moyenne >= 10) return { text: "Admis", class: "status-success" };
+            return { text: "Ajourné", class: "status-ajourne" };
+        }
+        
+        function updatePublicStats() {
+            document.getElementById('totalFormations').textContent = db.formations.length;
+            document.getElementById('totalApprenants').textContent = db.apprenants.length + 50;
+            document.getElementById('totalFormateurs').textContent = db.formateurs.length;
+            if(db.notes.length) { 
+                let reussites=db.notes.filter(n=>n.valeur>=10).length; 
+                document.getElementById('tauxReussite').textContent = Math.round((reussites/db.notes.length)*100)+'%'; 
+            }
+        }
+        
+        function displayFormations() {
+            let c = document.getElementById('formations-list'); 
+            if(!c) return;
+            c.innerHTML = '';
+            db.formations.forEach(f => { 
+                c.innerHTML += `<div class="formation-card"><div class="card-header"><h3>${f.nom}</h3><span class="niveau">Niveau ${f.niveau}</span></div><div class="card-body"><p>${f.description}</p><div class="card-info"><div class="info-item"><i class="fas fa-clock"></i><span>${f.duree} heures</span></div><div class="info-item"><i class="fas fa-users"></i><span>${f.inscrits||0}/${f.places} places</span></div><div class="info-item"><i class="fas fa-tag"></i><span>${f.categorie}</span></div></div></div><div class="card-footer"><span>Formation certifiante</span><button class="btn-inscription" onclick="showInscriptionEnLigneWithFormation(${f.id})">S'inscrire</button></div></div>`; 
+            });
+            let sel = document.getElementById('insc-formation'); 
+            if(sel) { 
+                sel.innerHTML='<option value="">Sélectionnez</option>'; 
+                db.formations.forEach(f=>sel.innerHTML+=`<option value="${f.id}">${f.nom}</option>`); 
+            }
+        }
+        
+        function displayLessons() {
+            let container = document.getElementById('lessons-list');
+            if (!container) return;
+            container.innerHTML = '';
+            if (db.lecons.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--gray-text);">Aucune leçon disponible pour le moment. Revenez plus tard !</div>';
+                return;
+            }
+            db.lecons.forEach(lesson => {
+                let formation = db.formations.find(f => f.id === lesson.formationId);
+                let formationName = formation ? formation.nom : 'Formation générale';
+                let resourcesHtml = '';
+                if (lesson.ressources && lesson.ressources.length > 0) {
+                    resourcesHtml = '<div class="lesson-resources">';
+                    lesson.ressources.forEach(res => {
+                        let icon = '';
+                        let label = '';
+                        if (res.type === 'video') {
+                            icon = '<i class="fas fa-video"></i>';
+                            label = 'Voir la vidéo';
+                        } else if (res.type === 'pdf') {
+                            icon = '<i class="fas fa-file-pdf"></i>';
+                            label = 'Télécharger PDF';
+                        } else {
+                            icon = '<i class="fas fa-file-alt"></i>';
+                            label = 'Lire le document';
+                        }
+                        resourcesHtml += `<a href="${res.url}" target="_blank" class="resource-link">${icon} ${label}</a>`;
+                    });
+                    resourcesHtml += '</div>';
+                }
+                container.innerHTML += `
+                    <div class="lesson-card">
+                        <div class="lesson-title">${escapeHtml(lesson.titre)}</div>
+                        <div class="lesson-formation"><i class="fas fa-graduation-cap"></i> ${escapeHtml(formationName)}</div>
+                        <div class="lesson-content">${escapeHtml(lesson.description)}</div>
+                        ${resourcesHtml}
+                    </div>
+                `;
+            });
+        }
+        
+        function escapeHtml(str) { 
+            if(!str) return ''; 
+            return str.replace(/[&<>]/g, function(m) { 
+                if(m === '&') return '&amp;'; 
+                if(m === '<') return '&lt;'; 
+                if(m === '>') return '&gt;'; 
+                return m; 
+            }); 
+        }
+        
+        function displaySiteContent() {
+            let contact = document.getElementById('contact-info');
+            if(contact) contact.innerHTML = `<div><h3><i class="fas fa-map-marker-alt"></i> Adresse</h3><p>${db.siteContent.address}</p></div><div><h3><i class="fas fa-phone"></i> Téléphone</h3><p>${db.siteContent.phone}</p></div><div><h3><i class="fas fa-envelope"></i> Email</h3><p>${db.siteContent.email}</p></div>`;
+            let footer = document.getElementById('footer-content');
+            if(footer) footer.innerHTML = `<div class="footer-section"><h3>PERMIS TIC</h3><p>${db.siteContent.footerText}</p></div><div class="footer-section"><h3>Liens rapides</h3><p><i class="fas fa-chevron-right"></i> Formations</p><p><i class="fas fa-chevron-right"></i> Inscription</p></div>`;
+        }
+        
+        function displayTestimonials() {
+            let container = document.getElementById('testimonials-list');
+            if(container && db.temoignages.length) {
+                container.innerHTML = '';
+                db.temoignages.forEach(t => {
+                    container.innerHTML += `<div class="testimonial-card"><p class="testimonial-text">"${t.texte}"</p><p class="testimonial-author">- ${t.auteur}</p></div>`;
+                });
+            }
+        }
+        
+        function scrollToFormations() { document.getElementById('formations-section')?.scrollIntoView({behavior:'smooth'}); }
+        function scrollToLessons() { document.getElementById('lessons-section')?.scrollIntoView({behavior:'smooth'}); }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        
+        function showInscriptionEnLigne() { document.getElementById('inscriptionEnLigneModal').style.display = 'flex'; }
+        function showInscriptionEnLigneWithFormation(id) { showInscriptionEnLigne(); setTimeout(()=>{ let sel=document.getElementById('insc-formation'); if(sel) sel.value=id; },100); }
+        
+        document.getElementById('inscriptionEnLigneForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            let tel = document.getElementById('insc-telephone').value;
+            if(!validatePhone(tel)) { let m=document.getElementById('inscMessageResult'); m.textContent='Le téléphone doit contenir 10 chiffres'; m.className='message error-message'; m.style.display='block'; return; }
+            db.inscriptions.push({ id: generateId(db.inscriptions), nom: document.getElementById('insc-nom').value, prenom: document.getElementById('insc-prenom').value, email: document.getElementById('insc-email').value, telephone: tel, formationId: parseInt(document.getElementById('insc-formation').value), message: document.getElementById('insc-message').value, date: new Date().toISOString().split('T')[0], statut: 'en_attente' });
+            saveToStorage();
+            let m=document.getElementById('inscMessageResult'); m.textContent='Demande envoyée avec succès !'; m.className='message success-message'; m.style.display='block';
+            document.getElementById('inscriptionEnLigneForm').reset();
+            setTimeout(()=>{ closeModal('inscriptionEnLigneModal'); m.style.display='none'; },3000);
+        });
+        
+        // ADMIN
+        function showAdminLogin() { document.getElementById('public-section').style.display='none'; document.getElementById('adminLogin').style.display='flex'; }
+        function backToPublic() { document.getElementById('adminLogin').style.display='none'; document.getElementById('adminDashboard').style.display='none'; document.getElementById('public-section').style.display='block'; isAdminLoggedIn=false; }
+        
+        document.getElementById('loginForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if(document.getElementById('adminUsername').value==='admin' && document.getElementById('adminPassword').value===adminPassword) {
+                isAdminLoggedIn=true; document.getElementById('adminLogin').style.display='none'; document.getElementById('adminDashboard').style.display='flex';
+                loadAdminData(); showAdminPage('dashboard', document.querySelector('.admin-menu li.active'));
+            } else { let msg=document.getElementById('loginMessage'); msg.textContent='Identifiants incorrects'; msg.style.display='block'; }
+        });
+        
+        function logoutAdmin() { isAdminLoggedIn=false; document.getElementById('adminDashboard').style.display='none'; document.getElementById('public-section').style.display='block'; showToast('Déconnexion'); }
+        
+        function showAdminPage(page, el) {
+            document.querySelectorAll('.admin-menu li').forEach(li=>li.classList.remove('active')); 
+            if(el) el.classList.add('active');
+            ['adminDashboardContent','adminInscriptionsContent','adminApprenantsContent','adminFormationsContent','adminLeconsContent','adminFormateursContent','adminNotesContent','adminParametresContent'].forEach(id=>{
+                let elem = document.getElementById(id);
+                if(elem) elem.style.display = 'none';
+            });
+            let titles = {dashboard:'Tableau de bord', inscriptions:'Inscriptions', apprenants:'Apprenants', formations:'Formations', lecons:'Leçons & Contenus', formateurs:'Formateurs', notes:'Gestion des notes', parametres:'Paramètres'};
+            let titleElem = document.getElementById('adminPageTitle');
+            if(titleElem) titleElem.textContent = titles[page];
+            if(page==='dashboard') { 
+                let d = document.getElementById('adminDashboardContent');
+                if(d) d.style.display = 'block'; 
+                loadAdminData(); 
+            }
+            else if(page==='inscriptions') { 
+                let d = document.getElementById('adminInscriptionsContent');
+                if(d) d.style.display = 'block'; 
+                loadInscriptionsTable(); 
+            }
+            else if(page==='apprenants') { 
+                let d = document.getElementById('adminApprenantsContent');
+                if(d) d.style.display = 'block'; 
+                loadApprenantsTable(); 
+            }
+            else if(page==='formations') { 
+                let d = document.getElementById('adminFormationsContent');
+                if(d) d.style.display = 'block'; 
+                loadAdminFormationsTable(); 
+            }
+            else if(page==='lecons') { 
+                let d = document.getElementById('adminLeconsContent');
+                if(d) d.style.display = 'block'; 
+                loadAdminLeconsTable(); 
+            }
+            else if(page==='formateurs') { 
+                let d = document.getElementById('adminFormateursContent');
+                if(d) d.style.display = 'block'; 
+                loadAdminFormateursTable(); 
+            }
+            else if(page==='notes') { 
+                let d = document.getElementById('adminNotesContent');
+                if(d) d.style.display = 'block'; 
+                loadNotesTable(); 
+            }
+            else if(page==='parametres') { 
+                let d = document.getElementById('adminParametresContent');
+                if(d) d.style.display = 'block'; 
+                loadCentreInfo(); 
+                initLanguageTheme(); 
+            }
+        }
+        
+        // Fonctions pour le tableau de bord
+        function editStatCard(type) {
+            showToast(`Modification des statistiques ${type} - Redirection vers la page correspondante`);
+            if (type === 'inscriptions') {
+                showAdminPage('inscriptions', document.querySelectorAll('.admin-menu li')[1]);
+            } else if (type === 'apprenants') {
+                showAdminPage('apprenants', document.querySelectorAll('.admin-menu li')[2]);
+            } else if (type === 'formations') {
+                showAdminPage('formations', document.querySelectorAll('.admin-menu li')[3]);
+            } else if (type === 'lecons') {
+                showAdminPage('lecons', document.querySelectorAll('.admin-menu li')[4]);
+            }
+        }
+
+        function editRecentInscriptions() {
+            showToast('Modification des inscriptions récentes - Redirection vers la page inscriptions');
+            showAdminPage('inscriptions', document.querySelectorAll('.admin-menu li')[1]);
+        }
+
+        function editCentreInfo() {
+            let modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Modifier les informations du centre</h2>
+                        <span class="close-modal" onclick="this.closest('.modal').remove()">&times;</span>
+                    </div>
+                    <form id="quickCentreInfoForm">
+                        <div class="form-group"><label>Adresse</label><input type="text" id="quickAdresse" value="${db.siteContent.address.replace(/"/g, '&quot;')}" class="form-control"></div>
+                        <div class="form-group"><label>Téléphone</label><input type="text" id="quickTelephone" value="${db.siteContent.phone}" class="form-control"></div>
+                        <div class="form-group"><label>Email</label><input type="email" id="quickEmail" value="${db.siteContent.email}" class="form-control"></div>
+                        <div class="form-group"><label>Texte du footer</label><textarea id="quickFooterText" class="form-control" rows="2">${db.siteContent.footerText.replace(/"/g, '&quot;')}</textarea></div>
+                        <button type="submit" class="btn-submit">Enregistrer</button>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            document.getElementById('quickCentreInfoForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                db.siteContent = {
+                    address: document.getElementById('quickAdresse').value,
+                    phone: document.getElementById('quickTelephone').value,
+                    email: document.getElementById('quickEmail').value,
+                    footerText: document.getElementById('quickFooterText').value
+                };
+                saveToStorage();
+                displaySiteContent();
+                loadCentreInfo();
+                showToast('Informations modifiées avec succès');
+                modal.remove();
+            });
+        }
+        
+        function loadAdminData() {
+            let statInsc = document.getElementById('statInscriptions');
+            if(statInsc) statInsc.textContent = db.inscriptions.filter(i=>i.statut==='en_attente').length;
+            let statApp = document.getElementById('statApprenants');
+            if(statApp) statApp.textContent = db.apprenants.length;
+            let statForm = document.getElementById('statFormations');
+            if(statForm) statForm.textContent = db.formations.length;
+            let statLecons = document.getElementById('statLecons');
+            if(statLecons) statLecons.textContent = db.lecons.length;
+            let tbody = document.querySelector('#recentInscriptions tbody');
+            if(tbody) {
+                tbody.innerHTML='';
+                db.inscriptions.slice(-5).reverse().forEach(i=>{ 
+                    let f=db.formations.find(fo=>fo.id===i.formationId); 
+                    tbody.innerHTML+=`<tr><td>${i.nom}</td><td>${i.prenom}</td><td>${f?.nom||'N/A'}</td><td>${formatDate(i.date)}</td><td><button class="action-btn edit-btn" onclick="confirmInscription(${i.id})" style="margin-right:5px;"><i class="fas fa-edit"></i> Modifier</button><button class="action-btn delete-btn" onclick="deleteInscription(${i.id})"><i class="fas fa-trash"></i> Supprimer</button></td></tr>`; 
+                });
+            }
+        }
+        
+        function loadInscriptionsTable() { 
+            let tbody=document.querySelector('#inscriptionsTable tbody'); 
+            if(!tbody) return;
+            tbody.innerHTML=''; 
+            db.inscriptions.forEach(i=>{ 
+                let f=db.formations.find(fo=>fo.id===i.formationId); 
+                tbody.innerHTML+=`<tr><td>${i.id}</td><td>${i.nom}</td><td>${i.prenom}</td><td>${i.email}</td><td>${i.telephone}</td><td>${f?.nom||'N/A'}</td><td>${formatDate(i.date)}</td><td><span class="status-badge ${i.statut==='confirmee'?'status-success':'status-warning'}">${i.statut==='en_attente'?'En attente':'Confirmée'}</span></td><td><button class="action-btn edit-btn" onclick="confirmInscription(${i.id})" style="margin-right:5px;"><i class="fas fa-edit"></i> Modifier</button><button class="action-btn delete-btn" onclick="deleteInscription(${i.id})"><i class="fas fa-trash"></i> Supprimer</button></td></tr>`; 
+            }); 
+        }
+        
+        function confirmInscription(id) { 
+            let i=db.inscriptions.find(x=>x.id===id); 
+            if(i && i.statut==='en_attente'){ 
+                i.statut='confirmee'; 
+                if(!db.apprenants.find(a=>a.email===i.email)) 
+                    db.apprenants.push({id:generateId(db.apprenants), nom:i.nom, prenom:i.prenom, email:i.email, telephone:i.telephone, formations:[i.formationId], statut:'actif'}); 
+                let f=db.formations.find(fo=>fo.id===i.formationId); 
+                if(f) f.inscrits=(f.inscrits||0)+1; 
+                saveToStorage(); 
+                showToast('Inscription confirmée avec succès'); 
+                loadInscriptionsTable(); 
+                loadAdminData(); 
+                updatePublicStats(); 
+                displayFormations(); 
+            } else if(i && i.statut==='confirmee') {
+                showToast('Cette inscription est déjà confirmée');
+            }
+        }
+        
+        function deleteInscription(id) { 
+            if(confirm('Supprimer cette inscription ?')){ 
+                db.inscriptions=db.inscriptions.filter(i=>i.id!==id); 
+                saveToStorage(); 
+                showToast('Inscription supprimée'); 
+                loadInscriptionsTable(); 
+                loadAdminData(); 
+            } 
+        }
+        
+        function loadApprenantsTable() { 
+            let tbody=document.querySelector('#apprenantsTable tbody'); 
+            if(!tbody) return;
+            tbody.innerHTML=''; 
+            db.apprenants.forEach(a=>{ 
+                let formations=a.formations.map(fid=>db.formations.find(f=>f.id===fid)?.nom).join(', '); 
+                let moyenne = getApprenantMoyenne(a.id);
+                let statut = getApprenantStatut(moyenne);
+                let moyenneDisplay = moyenne !== null ? moyenne.toFixed(1) + '/20' : '-';
+                tbody.innerHTML+=`<tr><td>${a.id}</td><td>${a.nom}</td><td>${a.prenom}</td><td>${a.email}</td><td>${a.telephone}</td><td>${formations}</td><td><strong>${moyenneDisplay}</strong></td><td><span class="status-badge ${statut.class}">${statut.text}</span></td><td><button class="action-btn edit-btn" onclick="showBulletin(${a.id})" style="margin-right:5px;"><i class="fas fa-edit"></i> Modifier</button><button class="action-btn delete-btn" onclick="deleteApprenant(${a.id})"><i class="fas fa-trash"></i> Supprimer</button></td></tr>`; 
+            }); 
+        }
+        
+        function deleteApprenant(id) {
+            if(confirm('Supprimer cet apprenant ?')) {
+                db.apprenants = db.apprenants.filter(a => a.id !== id);
+                db.notes = db.notes.filter(n => n.apprenantId !== id);
+                saveToStorage();
+                loadApprenantsTable();
+                updatePublicStats();
+                showToast('Apprenant supprimé');
+            }
+        }
+        
+        function loadAdminFormationsTable() { 
+            let tbody=document.querySelector('#formationsAdminTable tbody'); 
+            if(!tbody) return;
+            tbody.innerHTML=''; 
+            db.formations.forEach(f=>{ 
+                let formateur=db.formateurs.find(fr=>fr.id===f.formateurId); 
+                tbody.innerHTML+=`<tr><td>${f.id}</td><td>${f.nom}</td><td><span class="category-badge">${f.categorie}</span></td><td><span class="level-badge">${f.niveau}</span></td><td>${f.duree}h</td><td>${formateur?`${formateur.prenom} ${formateur.nom}`:'Non assigné'}</td><td><span class="status-badge ${f.statut==='active'?'status-success':'status-danger'}">${f.statut}</span></td><td><button class="action-btn edit-btn" onclick="editFormation(${f.id})" style="margin-right:5px;"><i class="fas fa-edit"></i> Modifier</button><button class="action-btn delete-btn" onclick="deleteFormation(${f.id})"><i class="fas fa-trash"></i> Supprimer</button></td></tr>`; 
+            }); 
+        }
+        
+        function showFormModal(id=null) { 
+            let modal = document.getElementById('formationModal');
+            if(!modal) return;
+            modal.style.display='flex'; 
+            document.getElementById('formationId').value=''; 
+            document.getElementById('formationNom').value=''; 
+            document.getElementById('formationDescription').value=''; 
+            document.getElementById('formationCategorie').value='débutant'; 
+            document.getElementById('formationNiveau').value='base'; 
+            document.getElementById('formationDuree').value=''; 
+            document.getElementById('formationPlaces').value=''; 
+            let sel=document.getElementById('formationFormateurId'); 
+            if(sel) {
+                sel.innerHTML='<option value="">Sélectionner</option>'; 
+                db.formateurs.forEach(f=>sel.innerHTML+=`<option value="${f.id}">${f.prenom} ${f.nom}</option>`); 
+            }
+            if(id) editFormation(id); 
+        }
+        
+        function editFormation(id) { 
+            let f=db.formations.find(x=>x.id===id); 
+            if(f){ 
+                showFormModal();
+                document.getElementById('formationId').value=f.id; 
+                document.getElementById('formationNom').value=f.nom; 
+                document.getElementById('formationDescription').value=f.description; 
+                document.getElementById('formationCategorie').value=f.categorie; 
+                document.getElementById('formationNiveau').value=f.niveau; 
+                document.getElementById('formationDuree').value=f.duree; 
+                document.getElementById('formationPlaces').value=f.places; 
+                document.getElementById('formationFormateurId').value=f.formateurId||''; 
+            } 
+        }
+        
+        function deleteFormation(id) { 
+            if(confirm('Supprimer cette formation ?')){ 
+                db.formations=db.formations.filter(f=>f.id!==id); 
+                saveToStorage(); 
+                loadAdminFormationsTable(); 
+                displayFormations(); 
+                updatePublicStats(); 
+                showToast('Formation supprimée'); 
+            } 
+        }
+        
+        document.getElementById('formationFormAdmin')?.addEventListener('submit', function(e) { 
+            e.preventDefault(); 
+            let id=parseInt(document.getElementById('formationId').value); 
+            let data={ 
+                id:id||generateId(db.formations), 
+                nom:document.getElementById('formationNom').value, 
+                description:document.getElementById('formationDescription').value, 
+                categorie:document.getElementById('formationCategorie').value, 
+                niveau:document.getElementById('formationNiveau').value, 
+                duree:parseInt(document.getElementById('formationDuree').value), 
+                places:parseInt(document.getElementById('formationPlaces').value), 
+                inscrits:0, 
+                formateurId:parseInt(document.getElementById('formationFormateurId').value)||null, 
+                statut:'active' 
+            }; 
+            if(id){ 
+                let idx=db.formations.findIndex(f=>f.id===id); 
+                if(idx!==-1){ 
+                    data.inscrits=db.formations[idx].inscrits||0; 
+                    db.formations[idx]=data; 
+                } 
+                showToast('Formation modifiée avec succès'); 
+            } else { 
+                db.formations.push(data); 
+                showToast('Formation ajoutée avec succès'); 
+            } 
+            saveToStorage(); 
+            closeModal('formationModal'); 
+            loadAdminFormationsTable(); 
+            displayFormations(); 
+            updatePublicStats(); 
+        });
+        
+        // Gestion des leçons
+        function addResourceField() { 
+            let container=document.getElementById('resourcesContainer'); 
+            if(!container) return;
+            let div=document.createElement('div'); 
+            div.className='resource-item'; 
+            div.style.display='flex'; 
+            div.style.gap='10px'; 
+            div.style.marginBottom='10px'; 
+            div.style.flexWrap='wrap';
+            div.innerHTML=`<select class="resource-type" style="width:120px;"><option value="video">🎬 Vidéo</option><option value="pdf">📄 PDF</option><option value="document">📝 Document</option></select>
+                          <div class="file-upload-container" style="flex:1;">
+                              <input type="text" class="resource-url" placeholder="URL ou nom du fichier" style="flex:1; min-width:200px;">
+                              <input type="file" class="resource-file" style="display:none;" accept=".pdf,.mp4,.jpg,.png,.doc,.docx">
+                              <button type="button" class="upload-btn btn-sm" onclick="uploadFile(this)"><i class="fas fa-upload"></i> Choisir</button>
+                          </div>
+                          <button type="button" class="btn-danger btn-sm" onclick="this.parentElement.remove()">✖</button>`; 
+            container.appendChild(div); 
+        }
+        
+        function loadAdminLeconsTable() { 
+            let tbody=document.querySelector('#leconsAdminTable tbody'); 
+            if(!tbody) return;
+            tbody.innerHTML=''; 
+            db.lecons.forEach(l=>{ 
+                let f=db.formations.find(fo=>fo.id===l.formationId); 
+                let resourcesHtml=''; 
+                if(l.ressources && l.ressources.length) { 
+                    l.ressources.forEach(r=>{ 
+                        resourcesHtml+=`<span class="resource-badge">${r.type==='video'?'🎬':(r.type==='pdf'?'📄':'📝')}</span>`; 
+                    }); 
+                } 
+                tbody.innerHTML+=`<tr><td>${l.id}</td><td>${l.titre}</td><td>${f?.nom||'N/A'}</td><td>${l.description.substring(0,50)}...</td><td>${resourcesHtml||'-'}</td><td><button class="action-btn edit-btn" onclick="editLesson(${l.id})" style="margin-right:5px;"><i class="fas fa-edit"></i> Modifier</button><button class="action-btn delete-btn" onclick="deleteLesson(${l.id})"><i class="fas fa-trash"></i> Supprimer</button></td></tr>`; 
+            }); 
+        }
+        
+        function showLessonModal(id=null) { 
+            let modal = document.getElementById('lessonModal');
+            if(!modal) return;
+            modal.style.display='flex'; 
+            let sel=document.getElementById('lessonFormationId'); 
+            if(sel) {
+                sel.innerHTML='<option value="">Sélectionner</option>'; 
+                db.formations.forEach(f=>sel.innerHTML+=`<option value="${f.id}">${f.nom}</option>`); 
+            }
+            document.getElementById('lessonId').value=''; 
+            document.getElementById('lessonTitle').value=''; 
+            document.getElementById('lessonDescription').value=''; 
+            let container = document.getElementById('resourcesContainer');
+            if(container) {
+                container.innerHTML=`<div class="resource-item" style="display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+                    <select class="resource-type" style="width:120px;">
+                        <option value="video">🎬 Vidéo (lien)</option>
+                        <option value="pdf">📄 PDF</option>
+                        <option value="document">📝 Document</option>
+                    </select>
+                    <div class="file-upload-container" style="flex:1;">
+                        <input type="text" class="resource-url" placeholder="URL ou nom du fichier" style="flex:1; min-width:200px;">
+                        <input type="file" class="resource-file" style="display:none;" accept=".pdf,.mp4,.jpg,.png,.doc,.docx">
+                        <button type="button" class="upload-btn btn-sm" onclick="uploadFile(this)"><i class="fas fa-upload"></i> Choisir</button>
+                    </div>
+                    <button type="button" class="btn-danger btn-sm" onclick="this.parentElement.remove()">✖</button>
+                </div>`; 
+            }
+            if(id) editLesson(id); 
+        }
+        
+        function editLesson(id) { 
+            let l=db.lecons.find(x=>x.id===id); 
+            if(l){ 
+                showLessonModal();
+                document.getElementById('lessonId').value=l.id; 
+                document.getElementById('lessonTitle').value=l.titre; 
+                document.getElementById('lessonDescription').value=l.description; 
+                document.getElementById('lessonFormationId').value=l.formationId; 
+                let container=document.getElementById('resourcesContainer'); 
+                if(container) {
+                    container.innerHTML=''; 
+                    if(l.ressources && l.ressources.length){ 
+                        l.ressources.forEach(r=>{ 
+                            let div=document.createElement('div'); 
+                            div.className='resource-item'; 
+                            div.style.display='flex'; 
+                            div.style.gap='10px'; 
+                            div.style.marginBottom='10px'; 
+                            div.style.flexWrap='wrap';
+                            div.innerHTML=`<select class="resource-type" style="width:120px;"><option value="video" ${r.type==='video'?'selected':''}>🎬 Vidéo</option><option value="pdf" ${r.type==='pdf'?'selected':''}>📄 PDF</option><option value="document" ${r.type==='document'?'selected':''}>📝 Document</option></select>
+                                        <div class="file-upload-container" style="flex:1;">
+                                            <input type="text" class="resource-url" value="${r.url.replace(/"/g, '&quot;')}" placeholder="URL ou nom du fichier" style="flex:1; min-width:200px;">
+                                            <input type="file" class="resource-file" style="display:none;" accept=".pdf,.mp4,.jpg,.png,.doc,.docx">
+                                            <button type="button" class="upload-btn btn-sm" onclick="uploadFile(this)"><i class="fas fa-upload"></i> Choisir</button>
+                                        </div>
+                                        <button type="button" class="btn-danger btn-sm" onclick="this.parentElement.remove()">✖</button>`; 
+                            container.appendChild(div); 
+                        }); 
+                    } else { 
+                        addResourceField(); 
+                    } 
+                }
+            } 
+        }
+        
+        function deleteLesson(id) { 
+            if(confirm('Supprimer cette leçon ?')){ 
+                db.lecons=db.lecons.filter(l=>l.id!==id); 
+                saveToStorage(); 
+                loadAdminLeconsTable(); 
+                displayLessons(); 
+                showToast('Leçon supprimée'); 
+            } 
+        }
+        
+        document.getElementById('lessonFormAdmin')?.addEventListener('submit', function(e) { 
+            e.preventDefault(); 
+            let id=parseInt(document.getElementById('lessonId').value); 
+            let ressources=[]; 
+            document.querySelectorAll('#resourcesContainer .resource-item').forEach(item=>{ 
+                let type=item.querySelector('.resource-type').value; 
+                let url=item.querySelector('.resource-url').value.trim(); 
+                if(url) ressources.push({type,url}); 
+            }); 
+            let data={ 
+                id:id||generateId(db.lecons), 
+                titre:document.getElementById('lessonTitle').value, 
+                formationId:parseInt(document.getElementById('lessonFormationId').value), 
+                description:document.getElementById('lessonDescription').value, 
+                ressources:ressources 
+            }; 
+            if(id){ 
+                let idx=db.lecons.findIndex(l=>l.id===id); 
+                if(idx!==-1) db.lecons[idx]=data; 
+                showToast('Leçon modifiée avec succès'); 
+            } else { 
+                db.lecons.push(data); 
+                showToast('Leçon ajoutée avec succès'); 
+            } 
+            saveToStorage(); 
+            closeModal('lessonModal'); 
+            loadAdminLeconsTable(); 
+            displayLessons(); 
+        });
+        
+        // Formateurs
+        function loadAdminFormateursTable() { 
+            let tbody=document.querySelector('#formateursAdminTable tbody'); 
+            if(!tbody) return;
+            tbody.innerHTML=''; 
+            db.formateurs.forEach(f=>{ 
+                tbody.innerHTML+=`<tr><td>${f.id}</td><td>${f.nom}</td><td>${f.prenom}</td><td>${f.email}</td><td>${f.telephone}</td><td>${f.specialite}</td><td><button class="action-btn edit-btn" onclick="editFormateur(${f.id})" style="margin-right:5px;"><i class="fas fa-edit"></i> Modifier</button><button class="action-btn delete-btn" onclick="deleteFormateur(${f.id})"><i class="fas fa-trash"></i> Supprimer</button></td></tr>`; 
+            }); 
+        }
+        
+        function showFormateurModal(id=null) { 
+            let modal = document.getElementById('formateurModal');
+            if(!modal) return;
+            modal.style.display='flex'; 
+            document.getElementById('formateurId').value=''; 
+            document.getElementById('formateurNom').value=''; 
+            document.getElementById('formateurPrenom').value=''; 
+            document.getElementById('formateurEmail').value=''; 
+            document.getElementById('formateurTelephone').value=''; 
+            document.getElementById('formateurSpecialite').value=''; 
+            if(id) editFormateur(id); 
+        }
+        
+        function editFormateur(id) { 
+            let f=db.formateurs.find(x=>x.id===id); 
+            if(f){ 
+                showFormateurModal();
+                document.getElementById('formateurId').value=f.id; 
+                document.getElementById('formateurNom').value=f.nom; 
+                document.getElementById('formateurPrenom').value=f.prenom; 
+                document.getElementById('formateurEmail').value=f.email; 
+                document.getElementById('formateurTelephone').value=f.telephone; 
+                document.getElementById('formateurSpecialite').value=f.specialite; 
+            } 
+        }
+        
+        function deleteFormateur(id) { 
+            if(confirm('Supprimer ce formateur ?')){ 
+                db.formateurs=db.formateurs.filter(f=>f.id!==id); 
+                saveToStorage(); 
+                loadAdminFormateursTable(); 
+                updatePublicStats(); 
+                showToast('Formateur supprimé'); 
+            } 
+        }
+        
+        document.getElementById('formateurFormAdmin')?.addEventListener('submit', function(e) { 
+            e.preventDefault(); 
+            let id=parseInt(document.getElementById('formateurId').value); 
+            let data={ 
+                id:id||generateId(db.formateurs), 
+                nom:document.getElementById('formateurNom').value, 
+                prenom:document.getElementById('formateurPrenom').value, 
+                email:document.getElementById('formateurEmail').value, 
+                telephone:document.getElementById('formateurTelephone').value, 
+                specialite:document.getElementById('formateurSpecialite').value 
+            }; 
+            if(id){ 
+                let idx=db.formateurs.findIndex(f=>f.id===id); 
+                if(idx!==-1) db.formateurs[idx]=data; 
+                showToast('Formateur modifié avec succès'); 
+            } else { 
+                db.formateurs.push(data); 
+                showToast('Formateur ajouté avec succès'); 
+            } 
+            saveToStorage(); 
+            closeModal('formateurModal'); 
+            loadAdminFormateursTable(); 
+            updatePublicStats(); 
+        });
+        
+        // Gestion des notes
+        function loadNotesTable() {
+            let tbody = document.querySelector('#notesAdminTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            db.notes.forEach(n => {
+                let apprenant = db.apprenants.find(a => a.id === n.apprenantId);
+                let formation = db.formations.find(f => f.id === n.formationId);
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${n.id}</td>
+                        <td>${apprenant ? apprenant.prenom + ' ' + apprenant.nom : 'N/A'}</td>
+                        <td>${formation ? formation.nom : 'N/A'}</td>
+                        <td><strong>${n.valeur}/20</strong></td>
+                        <td>${formatDate(n.date)}</td>
+                        <td>
+                            <button class="action-btn edit-btn" onclick="editNote(${n.id})" style="margin-right:5px;"><i class="fas fa-edit"></i> Modifier</button>
+                            <button class="action-btn delete-btn" onclick="deleteNote(${n.id})"><i class="fas fa-trash"></i> Supprimer</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        function showNoteModal(id = null) {
+            let modal = document.getElementById('noteModal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            
+            let apprenantSelect = document.getElementById('noteApprenantId');
+            let formationSelect = document.getElementById('noteFormationId');
+            
+            if (apprenantSelect) {
+                apprenantSelect.innerHTML = '<option value="">Sélectionner un apprenant</option>';
+                db.apprenants.forEach(a => {
+                    apprenantSelect.innerHTML += `<option value="${a.id}">${a.prenom} ${a.nom}</option>`;
+                });
+            }
+            
+            if (formationSelect) {
+                formationSelect.innerHTML = '<option value="">Sélectionner une formation</option>';
+                db.formations.forEach(f => {
+                    formationSelect.innerHTML += `<option value="${f.id}">${f.nom}</option>`;
+                });
+            }
+            
+            document.getElementById('noteId').value = '';
+            document.getElementById('noteValeur').value = '';
+            document.getElementById('noteDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('noteModalTitle').textContent = 'Ajouter une note';
+            
+            if (id) editNote(id);
+        }
+        
+        function editNote(id) {
+            let note = db.notes.find(n => n.id === id);
+            if (note) {
+                showNoteModal();
+                document.getElementById('noteId').value = note.id;
+                document.getElementById('noteApprenantId').value = note.apprenantId;
+                document.getElementById('noteFormationId').value = note.formationId;
+                document.getElementById('noteValeur').value = note.valeur;
+                document.getElementById('noteDate').value = note.date;
+                document.getElementById('noteModalTitle').textContent = 'Modifier la note';
+            }
+        }
+        
+        function deleteNote(id) {
+            if (confirm('Supprimer cette note ?')) {
+                db.notes = db.notes.filter(n => n.id !== id);
+                saveToStorage();
+                loadNotesTable();
+                loadApprenantsTable();
+                updatePublicStats();
+                showToast('Note supprimée');
+            }
+        }
+        
+        document.getElementById('noteFormAdmin')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            let id = parseInt(document.getElementById('noteId').value);
+            let apprenantId = parseInt(document.getElementById('noteApprenantId').value);
+            let formationId = parseInt(document.getElementById('noteFormationId').value);
+            let valeur = parseFloat(document.getElementById('noteValeur').value);
+            let date = document.getElementById('noteDate').value;
+            
+            if (!apprenantId || !formationId || isNaN(valeur) || !date) {
+                showToast('Veuillez remplir tous les champs', true);
+                return;
+            }
+            
+            if (valeur < 0 || valeur > 20) {
+                showToast('La note doit être comprise entre 0 et 20', true);
+                return;
+            }
+            
+            let data = {
+                id: id || generateId(db.notes),
+                apprenantId: apprenantId,
+                formationId: formationId,
+                valeur: valeur,
+                date: date
+            };
+            
+            if (id) {
+                let idx = db.notes.findIndex(n => n.id === id);
+                if (idx !== -1) db.notes[idx] = data;
+                showToast('Note modifiée avec succès');
+            } else {
+                db.notes.push(data);
+                showToast('Note ajoutée avec succès');
+            }
+            
+            saveToStorage();
+            closeModal('noteModal');
+            loadNotesTable();
+            loadApprenantsTable();
+            updatePublicStats();
+        });
+        
+        // Bulletin avec impression et téléchargement
+        function showBulletin(apprenantId) {
+            let apprenant = db.apprenants.find(a => a.id === apprenantId);
+            if (!apprenant) return;
+            currentBulletinApprenant = apprenant;
+            
+            let notesByFormation = {};
+            let allNotes = db.notes.filter(n => n.apprenantId === apprenantId);
+            
+            allNotes.forEach(n => {
+                if (!notesByFormation[n.formationId]) {
+                    notesByFormation[n.formationId] = [];
+                }
+                notesByFormation[n.formationId].push(n);
+            });
+            
+            let globalMoyenne = getApprenantMoyenne(apprenantId);
+            let statut = getApprenantStatut(globalMoyenne);
+            
+            let formationsHtml = '';
+            for (let formationId in notesByFormation) {
+                let formation = db.formations.find(f => f.id === parseInt(formationId));
+                let formationNotes = notesByFormation[formationId];
+                let formationMoyenne = formationNotes.reduce((sum, n) => sum + n.valeur, 0) / formationNotes.length;
+                
+                formationsHtml += `
+                    <div style="margin-bottom: 25px;">
+                        <h4 style="color: var(--primary-color); margin-bottom: 10px; border-left: 4px solid var(--primary-color); padding-left: 10px;">📘 ${formation ? formation.nom : 'Formation inconnue'}</h4>
+                        <table style="width: 100%; margin-top: 5px; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: var(--table-header-bg);">
+                                    <th style="padding: 10px; text-align: left;">Date</th>
+                                    <th style="padding: 10px; text-align: center;">Note /20</th>
+                                    <th style="padding: 10px; text-align: left;">Appréciation</th>
+                                   </tr>
+                            </thead>
+                            <tbody>
+                                ${formationNotes.map(n => {
+                                    let appreciation = '';
+                                    if (n.valeur >= 16) appreciation = 'Excellent';
+                                    else if (n.valeur >= 14) appreciation = 'Très bien';
+                                    else if (n.valeur >= 12) appreciation = 'Bien';
+                                    else if (n.valeur >= 10) appreciation = 'Passable';
+                                    else appreciation = 'Insuffisant';
+                                    return `
+                                        <tr>
+                                            <td style="padding: 8px;">${formatDate(n.date)}</td>
+                                            <td style="padding: 8px; text-align: center;"><strong>${n.valeur}/20</strong></td>
+                                            <td style="padding: 8px;">${appreciation}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                                <tr style="background: var(--light-bg); font-weight: bold;">
+                                    <td style="padding: 10px;"><strong>Moyenne de la formation</strong></td>
+                                    <td style="padding: 10px; text-align: center;"><strong>${formationMoyenne.toFixed(1)}/20</strong></td>
+                                    <td style="padding: 10px;"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            
+            let content = `
+                <div class="bulletin-header">
+                    <div class="bulletin-logo">
+                        <div class="logo-circle">PT</div>
+                        <div>
+                            <h2>PERMIS TIC</h2>
+                            <p>Centre de Formation Professionnelle</p>
+                        </div>
+                    </div>
+                    <div class="bulletin-title">
+                        <h3>BULLETIN DE NOTES</h3>
+                        <p>Année académique ${new Date().getFullYear()}</p>
+                    </div>
+                </div>
+                <div class="bulletin-info">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <p><strong>👤 Élève :</strong> ${apprenant.prenom} ${apprenant.nom.toUpperCase()}</p>
+                            <p><strong>📧 Email :</strong> ${apprenant.email}</p>
+                        </div>
+                        <div>
+                            <p><strong>📞 Téléphone :</strong> ${apprenant.telephone}</p>
+                            <p><strong>📚 Formations :</strong> ${apprenant.formations.map(fid => db.formations.find(f => f.id === fid)?.nom).join(', ') || 'Aucune'}</p>
+                        </div>
+                    </div>
+                </div>
+                ${formationsHtml || '<p style="text-align: center; color: var(--gray-text); padding: 40px;">Aucune note enregistrée pour cet apprenant.</p>'}
+                <div class="bulletin-moyenne ${globalMoyenne !== null ? (globalMoyenne >= 10 ? 'moyenne-admis' : 'moyenne-ajourne') : ''}" style="text-align: center;">
+                    <p style="font-size: 1.3rem;"><strong>📊 Moyenne générale :</strong> ${globalMoyenne !== null ? globalMoyenne.toFixed(2) + '/20' : 'Non calculée'}</p>
+                    <div class="statut-badge-large ${statut.class}" style="margin-top: 10px; display: inline-block;">
+                        <strong>🎓 Statut : ${statut.text}</strong>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; text-align: center; font-size: 0.9rem; color: var(--gray-text);">
+                    <p>Fait à Paris, le ${new Date().toLocaleDateString('fr-FR')}</p>
+                    <p>Le Directeur de la formation</p>
+                </div>
+            `;
+            
+            document.getElementById('bulletinContent').innerHTML = content;
+            document.getElementById('bulletinModal').style.display = 'flex';
+        }
+        
+        function printBulletin() {
+            window.print();
+        }
+        
+        function downloadBulletinPDF() {
+            let printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Bulletin ${currentBulletinApprenant ? currentBulletinApprenant.prenom + ' ' + currentBulletinApprenant.nom : 'Notes'}</title>
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                    <style>
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        }
+                        body {
+                            padding: 40px;
+                            background: white;
+                        }
+                        .bulletin-container {
+                            max-width: 900px;
+                            margin: 0 auto;
+                        }
+                        .bulletin-header {
+                            text-align: center;
+                            margin-bottom: 20px;
+                            padding-bottom: 15px;
+                            border-bottom: 2px solid #4CAF50;
+                        }
+                        .bulletin-logo {
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 15px;
+                            margin-bottom: 15px;
+                        }
+                        .logo-circle {
+                            width: 60px;
+                            height: 60px;
+                            background: #4CAF50;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-weight: bold;
+                            color: white;
+                            font-size: 28px;
+                        }
+                        .bulletin-info {
+                            background: #f8f9fa;
+                            padding: 15px;
+                            border-radius: 10px;
+                            margin-bottom: 20px;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 15px 0;
+                        }
+                        th, td {
+                            padding: 10px;
+                            text-align: left;
+                            border-bottom: 1px solid #ddd;
+                        }
+                        th {
+                            background: #f8f9fa;
+                        }
+                        .bulletin-moyenne {
+                            text-align: center;
+                            margin: 20px 0;
+                            padding: 15px;
+                            border-radius: 10px;
+                        }
+                        .moyenne-admis {
+                            background: rgba(76,175,80,0.2);
+                            color: #4CAF50;
+                        }
+                        .moyenne-ajourne {
+                            background: rgba(244,67,54,0.2);
+                            color: #F44336;
+                        }
+                        .status-success {
+                            background: rgba(76,175,80,0.2);
+                            color: #4CAF50;
+                            padding: 8px 20px;
+                            border-radius: 30px;
+                            display: inline-block;
+                        }
+                        .status-ajourne {
+                            background: rgba(244,67,54,0.2);
+                            color: #F44336;
+                            padding: 8px 20px;
+                            border-radius: 30px;
+                            display: inline-block;
+                        }
+                        .status-warning {
+                            background: rgba(255,193,7,0.2);
+                            color: #FFC107;
+                            padding: 8px 20px;
+                            border-radius: 30px;
+                            display: inline-block;
+                        }
+                        @media print {
+                            body {
+                                padding: 20px;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="bulletin-container">
+                        ${document.getElementById('bulletinContent').innerHTML}
+                        <div class="bulletin-footer" style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; font-size: 0.8rem; color: #6c757d;">
+                            <p>PERMIS TIC - Centre de Formation Professionnelle - Document officiel</p>
+                        </div>
+                    </div>
+                    <script>
+                        window.onload = function() { window.print(); setTimeout(() => window.close(), 1000); };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+        
+        // Paramètres centre
+        function loadCentreInfo() { 
+            let addr = document.getElementById('centreAdresse');
+            if(addr) addr.value = db.siteContent.address;
+            let phone = document.getElementById('centreTelephone');
+            if(phone) phone.value = db.siteContent.phone;
+            let email = document.getElementById('centreEmail');
+            if(email) email.value = db.siteContent.email;
+            let footer = document.getElementById('centreFooterText');
+            if(footer) footer.value = db.siteContent.footerText;
+        }
+        
+        document.getElementById('centreInfoForm')?.addEventListener('submit', function(e) { 
+            e.preventDefault(); 
+            db.siteContent={ 
+                address:document.getElementById('centreAdresse').value, 
+                phone:document.getElementById('centreTelephone').value, 
+                email:document.getElementById('centreEmail').value, 
+                footerText:document.getElementById('centreFooterText').value 
+            }; 
+            saveToStorage(); 
+            displaySiteContent(); 
+            showToast('Informations mises à jour'); 
+        });
+        
+        // Langue et thème
+        function initLanguageTheme() { 
+            document.querySelectorAll('.lang-btn').forEach(btn=>{ 
+                btn.addEventListener('click',()=>{ 
+                    document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active')); 
+                    btn.classList.add('active'); 
+                    setLanguage(btn.dataset.lang); 
+                }); 
+            }); 
+            document.querySelectorAll('.theme-btn').forEach(btn=>{ 
+                btn.addEventListener('click',()=>{ 
+                    document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active')); 
+                    btn.classList.add('active'); 
+                    setTheme(btn.dataset.theme); 
+                }); 
+            }); 
+            let savedLang=localStorage.getItem('permisTicLang'); 
+            if(savedLang) setLanguage(savedLang); 
+            else setLanguage('fr');
+            let savedTheme=localStorage.getItem('permisTicTheme'); 
+            if(savedTheme) setTheme(savedTheme); 
+            else setTheme('light');
+        }
+        
+        function setLanguage(lang) { 
+            currentLang=lang; 
+            localStorage.setItem('permisTicLang',lang); 
+            let t=translations[lang];
+            
+            let menuItems = document.querySelectorAll('.admin-menu li');
+            if(menuItems.length >= 8) {
+                if(menuItems[0]) menuItems[0].innerHTML = `<i class="fas fa-tachometer-alt"></i> ${t.dashboard || 'Tableau de bord'}`;
+                if(menuItems[1]) menuItems[1].innerHTML = `<i class="fas fa-clipboard-list"></i> ${t.inscriptions || 'Inscriptions'}`;
+                if(menuItems[2]) menuItems[2].innerHTML = `<i class="fas fa-users"></i> ${t.apprenants || 'Apprenants'}`;
+                if(menuItems[3]) menuItems[3].innerHTML = `<i class="fas fa-book"></i> ${t.formations || 'Formations'}`;
+                if(menuItems[4]) menuItems[4].innerHTML = `<i class="fas fa-chalkboard"></i> ${t.lecons || 'Leçons'}`;
+                if(menuItems[5]) menuItems[5].innerHTML = `<i class="fas fa-chalkboard-teacher"></i> ${t.formateurs || 'Formateurs'}`;
+                if(menuItems[6]) menuItems[6].innerHTML = `<i class="fas fa-star"></i> ${t.notes || 'Gestion des notes'}`;
+                if(menuItems[7]) menuItems[7].innerHTML = `<i class="fas fa-cog"></i> ${t.parametres || 'Paramètres'}`;
+            }
+            
+            let pageTitle = document.getElementById('adminPageTitle');
+            if(pageTitle) {
+                let current = pageTitle.textContent;
+                if(current === 'Tableau de bord') pageTitle.textContent = t.dashboard || 'Tableau de bord';
+                else if(current === 'Inscriptions') pageTitle.textContent = t.inscriptions || 'Inscriptions';
+                else if(current === 'Apprenants') pageTitle.textContent = t.apprenants || 'Apprenants';
+                else if(current === 'Formations') pageTitle.textContent = t.formations || 'Formations';
+                else if(current === 'Leçons & Contenus') pageTitle.textContent = t.lecons || 'Leçons';
+                else if(current === 'Formateurs') pageTitle.textContent = t.formateurs || 'Formateurs';
+                else if(current === 'Gestion des notes') pageTitle.textContent = t.notes || 'Gestion des notes';
+                else if(current === 'Paramètres') pageTitle.textContent = t.parametres || 'Paramètres';
+            }
+            
+            showToast(`Langue changée en ${lang === 'fr' ? 'Français' : (lang === 'en' ? 'English' : 'Malagasy')}`);
+        }
+        
+        function setTheme(theme) { 
+            if(theme==='dark') document.body.classList.add('dark-mode'); 
+            else document.body.classList.remove('dark-mode'); 
+            localStorage.setItem('permisTicTheme',theme); 
+            showToast(theme === 'dark' ? 'Mode sombre activé' : 'Mode clair activé');
+        }
+        
+        // Modification mot de passe
+        document.getElementById('passwordForm')?.addEventListener('submit', function(e) { 
+            e.preventDefault(); 
+            let pwd=document.getElementById('newPassword').value; 
+            let conf=document.getElementById('confirmPassword').value; 
+            if(pwd.length<4) showToast('4 caractères minimum',true); 
+            else if(pwd!==conf) showToast('Mots de passe différents',true); 
+            else { 
+                adminPassword=pwd; 
+                showToast('Mot de passe modifié'); 
+                document.getElementById('passwordForm').reset(); 
+            } 
+        });
+        
+        // Toggle password
+        document.querySelectorAll('.toggle-password').forEach(btn=>{ 
+            btn.addEventListener('click',function(){ 
+                let inp=document.getElementById(this.dataset.target); 
+                if(inp && inp.type==='password'){ 
+                    inp.type='text'; 
+                    this.querySelector('i').classList.replace('fa-eye','fa-eye-slash'); 
+                } else if(inp) { 
+                    inp.type='password'; 
+                    this.querySelector('i').classList.replace('fa-eye-slash','fa-eye'); 
+                } 
+            }); 
+        });
+        
+        // Upload fichier
+        function uploadFile(btn) {
+            const fileInput = btn.previousElementSibling;
+            if(fileInput && fileInput.type === 'file') {
+                fileInput.click();
+                fileInput.onchange = function(e) {
+                    if(e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        const urlInput = btn.parentElement.querySelector('.resource-url');
+                        if(urlInput) {
+                            urlInput.value = file.name + " (fichier local)";
+                            showToast(`Fichier "${file.name}" sélectionné`);
+                        }
+                    }
+                };
+            }
+        }
+        
+        // Initialisation
+        window.onload = function() { 
+            setTimeout(()=>{ 
+                let l=document.getElementById('loader'); 
+                if(l) {
+                    l.style.opacity='0'; 
+                    setTimeout(()=>l.style.display='none',500); 
+                }
+            },1000); 
+            loadDataFromStorage(); 
+            updatePublicStats(); 
+            displayFormations(); 
+            displayLessons(); 
+            displaySiteContent(); 
+            displayTestimonials(); 
+        };
+    </script>
+</body>
+</html>
