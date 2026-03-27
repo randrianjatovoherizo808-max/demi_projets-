@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        /* ... Tous les styles existants + nouveaux ... */
+        /* ==================== STYLES COMPLETS (inchangés) ==================== */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         :root {
             --primary: #4CAF50; --secondary: #2E7D32; --accent: #FFC107;
@@ -207,7 +207,7 @@
         }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false" onkeydown="return blockKeys(event)">
     <div id="loader" style="position: fixed; top:0; left:0; width:100%; height:100%; background: linear-gradient(135deg, #4CAF50, #2E7D32); display: flex; justify-content: center; align-items: center; z-index: 10000;">
         <div class="loader-content"><div class="logo-circle" style="margin: 0 auto 20px; width: 80px; height: 80px; font-size: 40px;">PT</div><h2 style="color:white;">PERMIS TIC</h2><div class="loader-spinner"></div></div>
     </div>
@@ -242,6 +242,30 @@
     <div id="bulletinModal" class="modal bulletin-modal"><div class="modal-content"><div class="modal-header"><h2>📜 Bulletin de notes</h2><span class="close-modal" onclick="closeModal('bulletinModal')">&times;</span></div><div class="bulletin-actions" style="margin-bottom:15px;"><button class="btn-inscription" onclick="printBulletin()">🖨️ Imprimer</button><button class="btn-inscription" onclick="downloadCertificate()">🎓 Télécharger certificat</button></div><div id="bulletinContent"></div></div></div>
 
     <script>
+        // ================== ANTI-DEBUG / PROTECTION ==================
+        function blockKeys(e) {
+            // Bloque F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+Shift+C, etc.
+            if (e.keyCode === 123 || // F12
+                (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || // Ctrl+Shift+I/J/C
+                (e.ctrlKey && e.keyCode === 85)) { // Ctrl+U
+                e.preventDefault();
+                return false;
+            }
+            return true;
+        }
+        document.onkeydown = blockKeys;
+        document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
+        // Désactiver la console ouverte via d'autres moyens (simple)
+        (function() {
+            let devtools = /./;
+            devtools.toString = function() {
+                this.opened = true;
+                alert("⚠️ Outils de développement désactivés pour des raisons de sécurité.");
+            };
+            console.log('%c', devtools);
+        })();
+        // ================== FIN PROTECTION ==================
+
         // ================== TRANSLATIONS ==================
         const translations = {
             fr: { "site-title":"PERMIS TIC","site-subtitle":"Centre de Formation Professionnelle","nav-formations":"Formations","nav-register":"S'inscrire","nav-admin":"Admin","nav-student":"Espace Apprenant","hero-title":"Formez-vous aux métiers du numérique","hero-subtitle":"Des formations adaptées à tous les niveaux","stat-formations":"Formations","stat-apprenants":"Apprenants","stat-formateurs":"Formateurs","stat-reussite":"Réussite","formations-title":"Nos formations","testimonials-title":"Témoignages","register-title":"Inscription","register-lastname":"Nom","register-firstname":"Prénom","register-email":"Email","register-phone":"Téléphone","register-formation":"Formation","register-password":"Mot de passe","register-submit":"Envoyer","student-login-title":"Espace Apprenant","login-email":"Email","login-password":"Mot de passe","login-submit":"Se connecter","forgot-password-link":"Mot de passe oublié ?","create-account":"Créer un compte","forgot-title":"Réinitialisation","forgot-email":"Email","forgot-send":"Envoyer" },
@@ -704,7 +728,7 @@
             let formationFilter = document.getElementById('filterInscriptionsFormation');
             formationFilter.innerHTML = '<option value="">Toutes formations</option>' + db.formations.map(f=>`<option value="${f.id}">${f.nom}</option>`).join('');
             function render(data) {
-                tbody.innerHTML = data.map(i=>{let f=db.formations.find(fo=>fo.id===i.formationId); return `<tr><td>${i.nom}</td><td>${i.prenom}</td><td>${i.email}</td><td>${f?.nom||''}</td><td><span class="status-badge ${i.statut==='confirmee'?'status-success':'status-warning'}">${i.statut==='en_attente'?'⏳ En attente':'✅ Confirmée'}</span></td><td><button class="action-btn edit-btn" onclick="confirmInscription(${i.id})">Confirmer</button><button class="action-btn delete-btn" onclick="if(confirm(\'Supprimer ?\')) deleteInscription(${i.id})">Supprimer</button></td></tr>`;}).join('');
+                tbody.innerHTML = data.map(i=>{let f=db.formations.find(fo=>fo.id===i.formationId); return `<tr><td>${i.nom}</td><td>${i.prenom}</td><td>${i.email}</td><td>${f?.nom||''}</td><td><span class="status-badge ${i.statut==='confirmee'?'status-success':'status-warning'}">${i.statut==='en_attente'?'⏳ En attente':'✅ Confirmée'}</span></td><td><button class="action-btn edit-btn" onclick="confirmInscription(${i.id})">Confirmer</button><button class="action-btn delete-btn" onclick="if(confirm('Supprimer ?')) deleteInscription(${i.id})">Supprimer</button></td></tr>`;}).join('');
             }
             function filter() {
                 let search = document.getElementById('searchInscriptions').value.toLowerCase();
@@ -749,7 +773,7 @@
             let formationFilter = document.getElementById('filterApprenantsFormation');
             formationFilter.innerHTML = '<option value="">Toutes formations</option>' + db.formations.map(f=>`<option value="${f.id}">${f.nom}</option>`).join('');
             function render(data) {
-                tbody.innerHTML = data.map(a=>{let mg=getMoyenneGenerale(a.id); let statut=mg>=10?'✅ Admis':(mg===null?'⏳ Non évalué':'❌ Ajourné'); return `<tr><td>${a.id}</td><td>${a.nom}</td><td>${a.prenom}</td><td>${a.email}</td><td>${mg!==null?mg.toFixed(1)+'/20':'-'}</td><td><span class="status-badge ${mg>=10?'status-success':'status-warning'}">${statut}</span></td><td><button class="action-btn edit-btn" onclick="showBulletin(${a.id})">📄 Bulletin</button><button class="action-btn delete-btn" onclick="if(confirm(\'Supprimer cet apprenant ?\')) deleteApprenant(${a.id})">🗑️ Supprimer</button></td></tr>`;}).join('');
+                tbody.innerHTML = data.map(a=>{let mg=getMoyenneGenerale(a.id); let statut=mg>=10?'✅ Admis':(mg===null?'⏳ Non évalué':'❌ Ajourné'); return `<tr><td>${a.id}</td><td>${a.nom}</td><td>${a.prenom}</td><td>${a.email}</td><td>${mg!==null?mg.toFixed(1)+'/20':'-'}</td><td><span class="status-badge ${mg>=10?'status-success':'status-warning'}">${statut}</span></td><td><button class="action-btn edit-btn" onclick="showBulletin(${a.id})">📄 Bulletin</button><button class="action-btn delete-btn" onclick="if(confirm('Supprimer cet apprenant ?')) deleteApprenant(${a.id})">🗑️ Supprimer</button></td></tr>`;}).join('');
             }
             function filter() {
                 let search = document.getElementById('searchApprenants').value.toLowerCase();
