@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -534,6 +536,45 @@
     .prog-wrap { background:var(--border); border-radius:30px; height:8px; overflow:hidden; }
     .prog-fill { height:100%; border-radius:30px; background:linear-gradient(90deg,#4CAF50,#8BC34A); }
     .info-row { background:var(--light); border-radius:14px; padding:14px; display:flex; gap:12px; align-items:center; border:1px solid var(--border); }
+
+    /* ===== RESPONSIVE MOBILE COMPLET ===== */
+    @media (max-width: 600px) {
+        .hero-title { font-size: 1.3rem; }
+        .hero-subtitle { font-size: 0.82rem; }
+        .stats-container { gap: 14px; }
+        .modal-content {
+            max-width: 100% !important;
+            width: 100% !important;
+            margin: 0 !important;
+            border-radius: 24px 24px 0 0 !important;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+        .modal { align-items: flex-end !important; }
+        .admin-table { padding: 12px 8px; }
+        table { min-width: 420px; font-size: 12px; }
+        th, td { padding: 8px 6px; }
+        .action-btn { padding: 4px 8px; font-size: 10px; }
+        .form-row { grid-template-columns: 1fr !important; gap: 0 !important; }
+        .nav-buttons { gap: 6px; }
+        .btn { font-size: 11px !important; padding: 8px 10px !important; }
+        .admin-main { padding: 12px; padding-top: 65px; }
+        .admin-header h2 { font-size: 1rem; }
+        .formations-grid { gap: 10px !important; }
+        .card-body p { font-size: 0.82rem; }
+        .ptab { font-size: 0.72rem !important; padding: 10px 4px !important; }
+        #profileAvatar { width: 72px !important; height: 72px !important; font-size: 2rem !important; margin-top: -28px !important; }
+        #studentWelcome { font-size: 1.1rem !important; }
+    }
+    @media (max-width: 400px) {
+        .hero-title { font-size: 1.1rem; }
+        .stat-number { font-size: 1.3rem; }
+        .section { padding: 20px 10px; }
+        .stat-card h3 { font-size: 1.3rem; }
+    }
 </style>
 </head>
 <body>
@@ -579,9 +620,77 @@
     </div>
 
     <!-- MODALS -->
-    <div id="inscriptionModal" class="modal"><div class="modal-content"><div class="modal-header"><h2>Inscription</h2><span class="close-modal" onclick="closeModal('inscriptionModal')">&times;</span></div><form id="inscriptionForm"><div class="form-row"><div class="form-group"><label>Nom</label><input type="text" id="inscNom" required></div><div class="form-group"><label>Prénom</label><input type="text" id="inscPrenom" required></div></div><div class="form-row"><div class="form-group"><label>Email</label><input type="email" id="inscEmail" required></div><div class="form-group"><label>Téléphone</label><input type="tel" id="inscTel" maxlength="10" required></div></div><div class="form-group"><label>Niveau</label><select id="inscNiveau" required><option value="">Sélectionnez un niveau</option><option value="A">Permis TIC A - Débutant</option><option value="B">Permis TIC B - Intermédiaire</option><option value="C">Permis TIC C - Avancé</option></select></div><div class="form-group"><label>Formation</label><select id="inscFormation" required></select></div><div class="form-group"><label>Mot de passe</label><input type="password" id="inscPassword" required minlength="4" placeholder="Minimum 4 caractères"></div><div class="form-group"><label>Confirmer le mot de passe</label><input type="password" id="inscPasswordConfirm" required minlength="4" placeholder="Répétez votre mot de passe"></div><div id="inscMsg" class="message"></div><button type="submit" class="btn-submit">Envoyer</button></form></div></div>
+    <div id="inscriptionModal" class="modal"><div class="modal-content" style="max-width:460px;">
+  <div class="modal-header"><h2>📝 Créer un compte</h2><span class="close-modal" onclick="closeModal('inscriptionModal')">&times;</span></div>
+
+  <!-- Social login buttons -->
+  <div style="padding:0 24px 0 24px;">
+    <button type="button" onclick="socialSignup('google')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:11px 16px;border:2px solid #ddd;border-radius:30px;background:#fff;cursor:pointer;font-weight:600;font-size:0.9rem;margin-bottom:10px;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='none'">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continuer avec Google
+    </button>
+    <button type="button" onclick="socialSignup('facebook')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:11px 16px;border:none;border-radius:30px;background:#1877F2;color:white;cursor:pointer;font-weight:600;font-size:0.9rem;margin-bottom:16px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      Continuer avec Facebook
+    </button>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div style="flex:1;height:1px;background:#e0e0e0;"></div>
+      <span style="font-size:0.78rem;color:#999;font-weight:500;">ou avec votre email</span>
+      <div style="flex:1;height:1px;background:#e0e0e0;"></div>
+    </div>
+  </div>
+
+  <form id="inscriptionForm" style="padding:0 24px 24px;">
+    <div class="form-row">
+      <div class="form-group"><label>Nom *</label><input type="text" id="inscNom" required placeholder="Votre nom"></div>
+      <div class="form-group"><label>Prénom *</label><input type="text" id="inscPrenom" required placeholder="Votre prénom"></div>
+    </div>
+    <div class="form-group"><label>Email *</label><input type="email" id="inscEmail" required placeholder="exemple@mail.com"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Téléphone</label><input type="tel" id="inscTel" maxlength="13" placeholder="+261 ..."></div>
+      <div class="form-group"><label>Niveau *</label><select id="inscNiveau" required><option value="">— Choisir —</option><option value="A">Permis TIC A</option><option value="B">Permis TIC B</option><option value="C">Permis TIC C</option></select></div>
+    </div>
+    <div class="form-group"><label>Formation *</label><select id="inscFormation" required></select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Mot de passe *</label><input type="password" id="inscPassword" required minlength="4" placeholder="Min. 4 caractères"></div>
+      <div class="form-group"><label>Confirmer *</label><input type="password" id="inscPasswordConfirm" required minlength="4" placeholder="Répéter"></div>
+    </div>
+    <div id="inscMsg" class="message" style="margin-bottom:10px;"></div>
+    <button type="submit" class="btn-submit" style="width:100%;">🚀 Créer mon compte</button>
+    <p style="text-align:center;margin-top:12px;font-size:0.8rem;color:#888;">
+      <i class="fas fa-lock" style="margin-right:4px;"></i>Votre compte sera activé après validation par l'administrateur.
+    </p>
+  </form>
+</div></div>
     
-    <div id="studentLoginModal" class="modal"><div class="modal-content" style="max-width:400px;"><div class="modal-header"><h2>🎓 Espace Apprenant</h2><span class="close-modal" onclick="closeModal('studentLoginModal')">&times;</span></div><form id="studentLoginForm"><div class="form-group"><label>Email</label><input type="email" id="studentEmail" required autocomplete="email"></div><div class="form-group"><label>Mot de passe</label><input type="password" id="studentPassword" required></div><div id="studentLoginMsg" class="message error-message"></div><button type="submit" class="btn-submit">Se connecter</button></form><p style="text-align:center; margin-top:15px;"><a href="#" onclick="showForgotPassword()" style="color:var(--primary);">Mot de passe oublié ?</a></p><p style="text-align:center;"><a href="#" onclick="closeModal('studentLoginModal'); showInscription();" style="color:var(--primary);">Créer un compte</a></p></div></div>
+    <div id="studentLoginModal" class="modal"><div class="modal-content" style="max-width:400px;">
+  <div class="modal-header"><h2>🎓 Espace Apprenant</h2><span class="close-modal" onclick="closeModal('studentLoginModal')">&times;</span></div>
+  <div style="padding:0 24px 0 24px;">
+    <button type="button" onclick="socialLogin('google')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:11px 16px;border:2px solid #ddd;border-radius:30px;background:#fff;cursor:pointer;font-weight:600;font-size:0.9rem;margin-bottom:10px;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.15)'" onmouseout="this.style.boxShadow='none'">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Connexion avec Google
+    </button>
+    <button type="button" onclick="socialLogin('facebook')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:11px 16px;border:none;border-radius:30px;background:#1877F2;color:white;cursor:pointer;font-weight:600;font-size:0.9rem;margin-bottom:16px;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      Connexion avec Facebook
+    </button>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div style="flex:1;height:1px;background:#e0e0e0;"></div>
+      <span style="font-size:0.78rem;color:#999;font-weight:500;">ou avec votre email</span>
+      <div style="flex:1;height:1px;background:#e0e0e0;"></div>
+    </div>
+  </div>
+  <form id="studentLoginForm" style="padding:0 24px 24px;">
+    <div class="form-group"><label>Email</label><input type="email" id="studentEmail" required autocomplete="email" placeholder="exemple@mail.com"></div>
+    <div class="form-group"><label>Mot de passe</label><input type="password" id="studentPassword" required placeholder="Votre mot de passe"></div>
+    <div id="studentLoginMsg" class="message error-message"></div>
+    <button type="submit" class="btn-submit" style="width:100%;">Se connecter</button>
+    <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:0.82rem;">
+      <a href="#" onclick="showForgotPassword()" style="color:var(--primary);">Mot de passe oublié ?</a>
+      <a href="#" onclick="closeModal(\'studentLoginModal\'); showInscription();" style="color:var(--primary);">Créer un compte</a>
+    </div>
+  </form>
+</div></div>
     
     <div id="forgotPasswordModal" class="modal"><div class="modal-content" style="max-width:400px;"><div class="modal-header"><h2>Réinitialisation</h2><span class="close-modal" onclick="closeModal('forgotPasswordModal')">&times;</span></div><form id="forgotForm"><div class="form-group"><label>Email</label><input type="email" id="forgotEmail" required></div><div id="forgotMsg" class="message"></div><button type="submit" class="btn-submit">Envoyer</button></form></div></div>
 
@@ -726,7 +835,9 @@
 
     <div id="adminLogin" class="admin-login" style="display:none;"><div class="login-card"><h2 style="color:var(--primary);">🔐 Admin / Formateur</h2><form id="adminLoginForm"><div class="form-group"><label>Email / Utilisateur</label><input type="text" id="adminUser" required></div><div class="form-group"><label>Mot de passe</label><input type="password" id="adminPwd" required></div><div id="adminLoginMsg" class="message error-message"></div><button type="submit" class="btn-submit">Connexion</button></form><div class="forgot-password-link"><a href="#" onclick="showAdminForgotModal()">🔑 Mot de passe oublié ?</a></div><button class="btn-back" onclick="backToPublic()">Retour</button></div></div>
     
-    <div id="adminDashboard" class="admin-container"><button class="menu-toggle" onclick="toggleAdminMenu()">☰ Menu</button><div class="admin-sidebar"><div class="admin-logo" style="padding:16px; text-align:center; border-bottom:1px solid rgba(255,255,255,0.15);"><img src="data:image/png;base64,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" alt="PIFTIC" class="admin-logo-img"><div style="color:rgba(255,255,255,0.75); font-size:0.68rem; margin-top:6px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;">Espace Admin</div></div><ul class="admin-menu"><li class="active" onclick="showPage('dashboard')"><i class="fas fa-tachometer-alt"></i> Dashboard</li><li onclick="showPage('inscriptions')"><i class="fas fa-list"></i> Inscriptions</li><li onclick="showPage('apprenants')"><i class="fas fa-users"></i> Apprenants</li><li onclick="showPage('formateurs')"><i class="fas fa-chalkboard-user"></i> Formateurs</li><li onclick="showPage('formations')"><i class="fas fa-book"></i> Formations</li><li onclick="showPage('lecons')"><i class="fas fa-chalkboard"></i> Leçons</li><li onclick="showPage('notes')"><i class="fas fa-star"></i> Notes</li><li onclick="showPage('coefficients')"><i class="fas fa-calculator"></i> Coefs</li><li onclick="showPage('certificats')"><i class="fas fa-certificate"></i> Certificats</li><li onclick="showPage('parametres')"><i class="fas fa-cog"></i> Paramètres</li></ul></div><div class="admin-main"><div class="admin-header"><h2 id="pageTitle">Tableau de bord</h2><button class="btn-logout" onclick="logoutAdmin()">Déconnexion</button></div><div id="dashboardContent"></div><div id="inscriptionsContent" style="display:none;"><div class="admin-table"><h3>📋 Inscriptions</h3><table id="inscriptionsTable"><thead><tr><th>Nom</th><th>Prénom</th><th>Email</th><th>Formation</th><th>Statut</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div><div id="apprenantsContent" style="display:none;"><div class="admin-table"><h3>👨‍🎓 Apprenants</h3><table id="apprenantsTable"><thead><tr><th>ID</th><th>Nom</th><th>Prénom</th><th>Email</th><th>Moyenne</th><th>Statut</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div><div id="formateursContent" style="display:none;"><div class="admin-table"><h3>👨‍🏫 Formateurs</h3><button class="btn-inscription" onclick="showFormateurModal()">+ Ajouter un formateur</button><table id="formateursTable"><thead><tr><th>ID</th><th>Nom</th><th>Prénom</th><th>Email</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div><div id="formationsContent" style="display:none;"><div class="admin-table"><h3>📚 Formations</h3><button class="btn-inscription" onclick="showFormModal()">+ Ajouter une formation</button><table id="formationsTable"><thead><tr><th>ID</th><th>Nom</th><th>Durée</th><th>Coef</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div><div id="leconsContent" style="display:none;"><div class="admin-table"><h3>📖 Leçons</h3><button class="btn-inscription" onclick="showLessonModal()">+ Ajouter une leçon</button><table id="leconsTable"><thead><tr><th>ID</th><th>Titre</th><th>Formation</th><th>Ressources</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div><div id="notesContent" style="display:none;"><div class="admin-table"><h3>📝 Notes</h3><button class="btn-inscription" onclick="showNoteModal()">+ Ajouter une note</button><table id="notesTable"><thead><tr><th>ID</th><th>Apprenant</th><th>Formation</th><th>Note</th><th>Date</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div><div id="certificatsContent" style="display:none;"></div><div id="coefficientsContent" style="display:none;"><div class="admin-table"><h3>⚙️ Coefficients</h3><table id="coefTable"><thead><tr><th>Formation</th><th>Coefficient actuel</th><th>Nouveau coefficient</th><th>Action</th></tr></thead><tbody></tbody></table></div></div>
+    <div id="adminDashboard" class="admin-container"><button class="menu-toggle" onclick="toggleAdminMenu()">☰ Menu</button><div class="admin-sidebar"><div class="admin-logo" style="padding:16px; text-align:center; border-bottom:1px solid rgba(255,255,255,0.15);"><img src="data:image/png;base64,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" alt="PIFTIC" class="admin-logo-img"><div style="color:rgba(255,255,255,0.75); font-size:0.68rem; margin-top:6px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;">Espace Admin</div></div><ul class="admin-menu"><li class="active" onclick="showPage('dashboard')"><i class="fas fa-tachometer-alt"></i> Dashboard</li><li onclick="showPage('inscriptions')"><i class="fas fa-list"></i> Inscriptions</li><li onclick="showPage('apprenants')"><i class="fas fa-users"></i> Apprenants</li><li onclick="showPage('formateurs')"><i class="fas fa-chalkboard-user"></i> Formateurs</li><li onclick="showPage('formations')"><i class="fas fa-book"></i> Formations</li><li onclick="showPage('lecons')"><i class="fas fa-chalkboard"></i> Leçons</li><li onclick="showPage('notes')"><i class="fas fa-star"></i> Notes</li><li onclick="showPage('coefficients')"><i class="fas fa-calculator"></i> Coefs</li><li onclick="showPage('certificats')"><i class="fas fa-certificate"></i> Certificats</li><li onclick="showPage('parametres')"><i class="fas fa-cog"></i> Paramètres</li>
+<li onclick="showPage('calendrier')"><i class="fas fa-calendar-alt"></i> Calendrier</li>
+<li onclick="showPage('sites')"><i class="fas fa-map-marker-alt"></i> Sites PIFTIC</li></ul></div><div class="admin-main"><div class="admin-header"><h2 id="pageTitle">Tableau de bord</h2><button class="btn-logout" onclick="logoutAdmin()">Déconnexion</button></div><div id="dashboardContent"></div><div id="inscriptionsContent" style="display:none;"><div class="admin-table"><h3>📋 Inscriptions</h3><table id="inscriptionsTable"><thead><tr><th>Nom</th><th>Prénom</th><th>Email</th><th>Formation</th><th>Statut</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div><div id="apprenantsContent" style="display:none;"><div class="admin-table"><h3>👨‍🎓 Apprenants</h3><table id="apprenantsTable"><thead><tr><th>ID</th><th>Nom</th><th>Prénom</th><th>Email</th><th>Moyenne</th><th>Statut</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div><div id="formateursContent" style="display:none;"><div class="admin-table"><h3>👨‍🏫 Formateurs</h3><button class="btn-inscription" onclick="showFormateurModal()">+ Ajouter un formateur</button><table id="formateursTable"><thead><tr><th>ID</th><th>Nom</th><th>Prénom</th><th>Email</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div><div id="formationsContent" style="display:none;"><div class="admin-table"><h3>📚 Formations</h3><button class="btn-inscription" onclick="showFormModal()">+ Ajouter une formation</button><table id="formationsTable"><thead><tr><th>ID</th><th>Nom</th><th>Durée</th><th>Coef</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div><div id="leconsContent" style="display:none;"><div class="admin-table"><h3>📖 Leçons</h3><button class="btn-inscription" onclick="showLessonModal()">+ Ajouter une leçon</button><table id="leconsTable"><thead><tr><th>ID</th><th>Titre</th><th>Formation</th><th>Ressources</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div><div id="notesContent" style="display:none;"><div class="admin-table"><h3>📝 Notes</h3><button class="btn-inscription" onclick="showNoteModal()">+ Ajouter une note</button><table id="notesTable"><thead><tr><th>ID</th><th>Apprenant</th><th>Formation</th><th>Note</th><th>Date</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div><div id="certificatsContent" style="display:none;"></div><div id="coefficientsContent" style="display:none;"><div class="admin-table"><h3>⚙️ Coefficients</h3><table id="coefTable"><thead><tr><th>Formation</th><th>Coefficient actuel</th><th>Nouveau coefficient</th><th>Action</th></tr></thead><tbody></tbody></table></div></div>
         <div id="parametresContent" style="display:none;">
             <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px;">
                 <div class="admin-table">
@@ -768,6 +879,28 @@
             </div>
         </div>
 
+        <!-- CALENDRIER DES SESSIONS -->
+        <div id="calendrierContent" style="display:none;">
+            <div class="admin-table" style="margin-bottom:18px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+                    <h3>📅 Calendrier des sessions de formation</h3>
+                    <button class="btn-inscription" onclick="showSessionModal()">+ Nouvelle session</button>
+                </div>
+                <div id="sessionsCalendar"></div>
+            </div>
+        </div>
+
+        <!-- MULTI-SITES PIFTIC -->
+        <div id="sitesContent" style="display:none;">
+            <div class="admin-table" style="margin-bottom:18px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+                    <h3>🗺️ Sites PIFTIC</h3>
+                    <button class="btn-inscription" onclick="showSiteModal()">+ Ajouter un site</button>
+                </div>
+                <table id="sitesTable"><thead><tr><th>Nom du site</th><th>Localisation</th><th>Responsable</th><th>Téléphone</th><th>Actions</th></tr></thead><tbody></tbody></table>
+            </div>
+        </div>
+
     <div id="formationModal" class="modal"><div class="modal-content"><div class="modal-header"><h2>📘 Formation</h2><span class="close-modal" onclick="closeModal('formationModal')">&times;</span></div><form id="formationForm"><input type="hidden" id="formId"><div class="form-group"><label>Nom</label><input type="text" id="formNom" required></div><div class="form-group"><label>Description</label><textarea id="formDesc" required></textarea></div><div class="form-row"><div class="form-group"><label>Durée (heures)</label><input type="number" id="formDuree" required></div><div class="form-group"><label>Places</label><input type="number" id="formPlaces" required></div></div><div class="form-group"><label>Coefficient</label><select id="formCoef"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div><button type="submit" class="btn-submit">Enregistrer</button></form></div></div>
     
     <div id="formateurModal" class="modal"><div class="modal-content"><div class="modal-header"><h2>👨‍🏫 Ajouter un formateur</h2><span class="close-modal" onclick="closeModal('formateurModal')">&times;</span></div><form id="formateurForm"><div class="form-row"><div class="form-group"><label>Nom</label><input type="text" id="formateurNom" required></div><div class="form-group"><label>Prénom</label><input type="text" id="formateurPrenom" required></div></div><div class="form-group"><label>Email</label><input type="email" id="formateurEmail" required></div><div class="form-group"><label>Mot de passe</label><input type="password" id="formateurPassword" required minlength="4"></div><div id="formateurMsg" class="message"></div><button type="submit" class="btn-submit">Créer</button></form></div></div>
@@ -796,6 +929,12 @@
     
     <div id="noteModal" class="modal"><div class="modal-content"><div class="modal-header"><h2>📊 Note</h2><span class="close-modal" onclick="closeModal('noteModal')">&times;</span></div><form id="noteForm"><input type="hidden" id="noteId"><div class="form-group"><label>Apprenant</label><select id="noteApprenant" required></select></div><div class="form-group"><label>Formation</label><select id="noteFormation" required></select></div><div class="form-group"><label>Note /20</label><input type="number" id="noteValue" step="0.5" min="0" max="20" required></div><div class="form-group"><label>Date</label><input type="date" id="noteDate" required></div><button type="submit" class="btn-submit">Enregistrer</button></form></div></div>
 
+    <!-- SESSION MODAL -->
+    <div id="sessionModal" class="modal"><div class="modal-content" style="max-width:520px;"><div class="modal-header"><h2>📅 Session de formation</h2><span class="close-modal" onclick="closeModal('sessionModal')">&times;</span></div><form id="sessionForm"><input type="hidden" id="sessionId"><div class="form-group"><label>Formation</label><select id="sessionFormation" required></select></div><div class="form-row"><div class="form-group"><label>Date de début</label><input type="date" id="sessionDebut" required></div><div class="form-group"><label>Date de fin</label><input type="date" id="sessionFin" required></div></div><div class="form-group"><label>Site PIFTIC</label><select id="sessionSite"><option value="">— Choisir un site —</option></select></div><div class="form-group"><label>Formateur</label><select id="sessionFormateur"><option value="">— Choisir un formateur —</option></select></div><div class="form-group"><label>Capacité max</label><input type="number" id="sessionCapacite" min="1" value="15"></div><button type="submit" class="btn-submit">💾 Enregistrer</button></form></div></div>
+
+    <!-- SITE MODAL -->
+    <div id="siteModal" class="modal"><div class="modal-content" style="max-width:480px;"><div class="modal-header"><h2>🗺️ Site PIFTIC</h2><span class="close-modal" onclick="closeModal('siteModal')">&times;</span></div><form id="siteForm"><input type="hidden" id="siteId"><div class="form-group"><label>Nom du site</label><input type="text" id="siteNom" required placeholder="Ex: PIFTIC Ampandrianomby"></div><div class="form-group"><label>Localisation</label><input type="text" id="siteLoc" required placeholder="Ex: Antananarivo"></div><div class="form-group"><label>Responsable</label><input type="text" id="siteResp" placeholder="Nom du responsable"></div><div class="form-group"><label>Téléphone</label><input type="tel" id="siteTel" placeholder="+261 ..."></div><button type="submit" class="btn-submit">💾 Enregistrer</button></form></div></div>
+
     <script>
         // ================== DATA ==================
         let db = { certificats: [], 
@@ -817,6 +956,13 @@
             messages: [], 
             lecons: [],
             notes: [],
+            sessions: [],
+            comptes_pending: [],
+            sites: [
+                { id: 1, nom: "PIFTIC Ampandrianomby", localisation: "Antananarivo", responsable: "SOLOFONIAINA Nirina", tel: "+261 34 00 000 01" },
+                { id: 2, nom: "PIFTIC Toamasina", localisation: "Toamasina", responsable: "", tel: "" },
+                { id: 3, nom: "PIFTIC Fianarantsoa", localisation: "Fianarantsoa", responsable: "", tel: "" }
+            ],
             siteContent: { address: "123 Avenue de la Formation, Paris", phone: "01 23 45 67 89", email: "contact@permis-tic.fr" } 
         };
         
@@ -946,12 +1092,106 @@
                     <div><div style="font-size:.72rem;color:var(--gray);">Notes enregistrées</div><div style="font-size:1.8rem;font-weight:900;color:var(--text);">${db.notes.length}</div></div>
                 </div>
             </div>`;
+            // Add chart + export section
+            html += `
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-top:18px;">
+                <div style="background:var(--card);border-radius:18px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <h3 style="font-size:0.95rem;font-weight:700;">📊 Répartition par niveau</h3>
+                    </div>
+                    <canvas id="chartNiveau" height="200"></canvas>
+                </div>
+                <div style="background:var(--card);border-radius:18px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <h3 style="font-size:0.95rem;font-weight:700;">📈 Inscriptions par formation</h3>
+                    </div>
+                    <canvas id="chartFormations" height="200"></canvas>
+                </div>
+                <div style="background:var(--card);border-radius:18px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <h3 style="font-size:0.95rem;font-weight:700;">🎯 Taux de réussite</h3>
+                    </div>
+                    <canvas id="chartReussite" height="200"></canvas>
+                </div>
+
+            </div>`;
             document.getElementById('dashboardContent').innerHTML = html;
+            // Update pending badge in sidebar
+            const pendingCount = (db.comptes_pending||[]).length;
+            const badgeEl = document.getElementById('pendingBadgeSidebar');
+            if(badgeEl) { badgeEl.textContent = pendingCount; badgeEl.style.display = pendingCount > 0 ? 'inline' : 'none'; }
+            // Render charts after DOM update
+            setTimeout(() => {
+                renderDashboardCharts();
+            }, 100);
         }
 
         function loadInscriptions() {
+            // ── Comptes en attente de validation ──
+            const pendingAccounts = db.comptes_pending || [];
+            const pendingBadge = pendingAccounts.length > 0 ? `<span style="background:#F44336;color:white;border-radius:50%;padding:2px 7px;font-size:0.72rem;font-weight:700;margin-left:6px;">${pendingAccounts.length}</span>` : '';
+
+            const inscContent = document.getElementById('inscriptionsContent');
+            let pendingHTML = '';
+            if(pendingAccounts.length > 0) {
+                pendingHTML = `<div class="admin-table" style="margin-bottom:22px;border:2px solid #FF9800;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                        <div style="font-size:1.5rem;">⏳</div>
+                        <h3 style="color:#E65100;">Comptes en attente de validation ${pendingBadge}</h3>
+                    </div>
+                    <div style="overflow-x:auto;"><table>
+                        <thead><tr><th>Nom</th><th>Prénom</th><th>Email</th><th>Source</th><th>Date</th><th>Actions</th></tr></thead>
+                        <tbody>${pendingAccounts.map(p => `<tr>
+                            <td><strong>${p.nom}</strong></td>
+                            <td>${p.prenom}</td>
+                            <td>${p.email}</td>
+                            <td><span style="padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;background:${p.source==='google'?'#EA4335':p.source==='facebook'?'#1877F2':'#4CAF50'};color:white;">${p.source==='google'?'🔵 Google':p.source==='facebook'?'📘 Facebook':'📧 Email'}</span></td>
+                            <td style="font-size:0.8rem;">${p.dateInscription||'—'}</td>
+                            <td>
+                                <button class="action-btn edit-btn" onclick="validerCompte('${p.id}')" style="background:#4CAF50;color:white;">✅ Valider</button>
+                                <button class="action-btn delete-btn" onclick="rejeterCompte('${p.id}')">❌ Rejeter</button>
+                            </td>
+                        </tr>`).join('')}
+                        </tbody>
+                    </table></div>
+                </div>`;
+            } else {
+                pendingHTML = `<div style="background:rgba(76,175,80,0.07);border:1px solid rgba(76,175,80,0.3);border-radius:14px;padding:14px 18px;margin-bottom:18px;font-size:0.88rem;color:#2E7D32;"><i class="fas fa-check-circle" style="margin-right:6px;"></i>Aucun compte en attente de validation.</div>`;
+            }
+
+            // Insert pending section before the inscriptions table
+            const existingPending = inscContent.querySelector('.pending-section');
+            if(existingPending) existingPending.remove();
+            const pendingDiv = document.createElement('div');
+            pendingDiv.className = 'pending-section';
+            pendingDiv.innerHTML = pendingHTML;
+            inscContent.insertBefore(pendingDiv, inscContent.firstChild);
+
+            // ── Inscriptions table ──
             let tbody = document.querySelector('#inscriptionsTable tbody');
             tbody.innerHTML = db.inscriptions.map(i => { let f = db.formations.find(fo=>fo.id===i.formationId); return `<tr><td>${i.nom}</td><td>${i.prenom}</td><td>${i.email}</td><td>${f?.nom||''}</td><td><span class="status-badge ${i.statut==='confirmee'?'status-success':'status-warning'}">${i.statut}</span></td><td><button class="action-btn edit-btn" onclick="confirmInscription(${i.id})">Confirmer</button><button class="action-btn delete-btn" onclick="deleteInscription(${i.id})">Supprimer</button></td></tr>`; }).join('');
+        }
+
+        function validerCompte(id) {
+            if(!db.comptes_pending) return;
+            const p = db.comptes_pending.find(x => x.id === id);
+            if(!p) return;
+            // Move to utilisateurs as active account
+            if(!db.utilisateurs.find(u => u.email === p.email)) {
+                db.utilisateurs.push({ id: p.id, email: p.email, password: p.password||'', nom: p.nom, prenom: p.prenom, role: 'etudiant', actif: true, source: p.source });
+            }
+            db.comptes_pending = db.comptes_pending.filter(x => x.id !== id);
+            save();
+            loadInscriptions();
+            showToast('✅ Compte validé ! L\'utilisateur peut maintenant se connecter.');
+        }
+
+        function rejeterCompte(id) {
+            if(!confirm('Rejeter et supprimer ce compte ?')) return;
+            db.comptes_pending = (db.comptes_pending||[]).filter(x => x.id !== id);
+            save();
+            loadInscriptions();
+            showToast('Compte rejeté.');
         }
         
         function confirmInscription(id) {
@@ -1159,9 +1399,9 @@
         document.getElementById('adminForgotForm')?.addEventListener('submit', function(e) { e.preventDefault(); let newPwd = "admin" + Math.floor(Math.random()*1000); adminPwd = newPwd; document.getElementById('adminForgotMsg').innerHTML = `✅ Nouveau mot de passe : <strong>${newPwd}</strong>`; document.getElementById('adminForgotMsg').className = 'message success-message'; document.getElementById('adminForgotMsg').style.display = 'block'; showToast(`Nouveau mot de passe : ${newPwd}`); });
         
         function showPage(page) {
-            document.querySelectorAll('#dashboardContent, #inscriptionsContent, #apprenantsContent, #formateursContent, #formationsContent, #leconsContent, #notesContent, #coefficientsContent, #certificatsContent, #parametresContent').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('#dashboardContent, #inscriptionsContent, #apprenantsContent, #formateursContent, #formationsContent, #leconsContent, #notesContent, #coefficientsContent, #certificatsContent, #parametresContent, #calendrierContent, #sitesContent').forEach(el => el.style.display = 'none');
             document.getElementById(page+'Content').style.display = 'block';
-            let titles = {dashboard:'Dashboard', inscriptions:'Inscriptions', apprenants:'Apprenants', formateurs:'Formateurs', formations:'Formations', lecons:'Leçons', notes:'Notes', coefficients:'Coefficients', certificats:'🎓 Certificats', parametres:'Paramètres'};
+            let titles = {dashboard:'Dashboard', inscriptions:'Inscriptions', apprenants:'Apprenants', formateurs:'Formateurs', formations:'Formations', lecons:'Leçons', notes:'Notes', coefficients:'Coefficients', certificats:'🎓 Certificats', parametres:'Paramètres', calendrier:'📅 Calendrier des sessions', sites:'🗺️ Sites PIFTIC'};
             document.getElementById('pageTitle').textContent = titles[page];
             if(page==='dashboard') loadDashboard();
             else if(page==='inscriptions') loadInscriptions();
@@ -1172,6 +1412,8 @@
             else if(page==='notes') loadNotesAdmin();
             else if(page==='coefficients') loadCoefAdmin();
             else if(page==='certificats') loadCertificatsAdmin();
+            else if(page==='calendrier') loadCalendrier();
+            else if(page==='sites') loadSites();
             else if(page==='parametres') { 
                 document.getElementById('centreAdr').value = db.siteContent.address; 
                 document.getElementById('centreTel').value = db.siteContent.phone; 
@@ -1205,13 +1447,72 @@
                 msg.style.display = 'block';
                 return;
             }
+            const email = document.getElementById('inscEmail').value.trim();
+            // Check for duplicate email
+            if(db.utilisateurs.find(u=>u.email===email) || (db.comptes_pending||[]).find(p=>p.email===email)) {
+                const msg = document.getElementById('inscMsg');
+                msg.className = 'message error-message';
+                msg.textContent = '❌ Cet email est déjà utilisé.';
+                msg.style.display = 'block';
+                return;
+            }
+            const pendingId = 'p_' + Date.now();
+            if(!db.comptes_pending) db.comptes_pending = [];
+            db.comptes_pending.push({
+                id: pendingId,
+                nom: document.getElementById('inscNom').value,
+                prenom: document.getElementById('inscPrenom').value,
+                email: email,
+                telephone: document.getElementById('inscTel').value,
+                niveau: document.getElementById('inscNiveau').value,
+                formationId: parseInt(document.getElementById('inscFormation').value)||null,
+                password: pwd,
+                source: 'email',
+                dateInscription: new Date().toLocaleDateString('fr-FR')
+            });
             let newId = generateId(db.inscriptions);
-            db.inscriptions.push({ id: newId, nom: document.getElementById('inscNom').value, prenom: document.getElementById('inscPrenom').value, email: document.getElementById('inscEmail').value, telephone: document.getElementById('inscTel').value, niveau: document.getElementById('inscNiveau').value, formationId: parseInt(document.getElementById('inscFormation').value), date: new Date().toISOString().split('T')[0], statut: 'en_attente', password: document.getElementById('inscPassword').value });
+            db.inscriptions.push({ id: newId, nom: document.getElementById('inscNom').value, prenom: document.getElementById('inscPrenom').value, email: email, telephone: document.getElementById('inscTel').value, niveau: document.getElementById('inscNiveau').value, formationId: parseInt(document.getElementById('inscFormation').value), date: new Date().toISOString().split('T')[0], statut: 'en_attente', password: pwd });
             save();
-            document.getElementById('inscMsg').innerHTML = '✅ Demande envoyée! En attente de validation.';
-            document.getElementById('inscMsg').className = 'message success-message';
-            document.getElementById('inscMsg').style.display = 'block';
-            setTimeout(() => { closeModal('inscriptionModal'); document.getElementById('inscriptionForm').reset(); document.getElementById('inscMsg').style.display = 'none'; }, 3000);
+            closeModal('inscriptionModal');
+            document.getElementById('inscriptionForm').reset();
+            // Modale de confirmation
+            const _nom = document.getElementById('inscNom') ? '' : '';
+            const _formation = db.formations.find(f => f.id === parseInt(document.getElementById('inscFormation')?.value));
+            const _niveau = document.getElementById('inscNiveau')?.value || '';
+            const _email2 = email;
+            const _formNom = _formation ? _formation.nom : '';
+            const _formDuree = _formation ? _formation.duree+'h' : '';
+            const cfOverlay = document.createElement('div');
+            cfOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+            cfOverlay.innerHTML = `
+            <div style="background:white;border-radius:24px;padding:0;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;animation:slideUp 0.4s ease;">
+                <style>@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}</style>
+                <div style="background:linear-gradient(135deg,#4CAF50,#2E7D32);padding:28px 24px;text-align:center;">
+                    <div style="font-size:3rem;margin-bottom:8px;">✅</div>
+                    <div style="color:white;font-weight:800;font-size:1.15rem;">Demande envoyée !</div>
+                    <div style="color:rgba(255,255,255,0.85);font-size:0.82rem;margin-top:4px;">Inscription en attente de validation</div>
+                </div>
+                <div style="padding:24px;">
+                    <div style="background:#F1F8E9;border-radius:16px;padding:16px;margin-bottom:14px;border-left:4px solid #4CAF50;">
+                        <div style="font-size:0.78rem;color:#666;margin-bottom:4px;">📧 Email enregistré</div>
+                        <div style="font-weight:700;color:#222;font-size:0.95rem;">${_email2}</div>
+                    </div>
+                    ${_formNom ? `<div style="background:#E3F2FD;border-radius:16px;padding:16px;margin-bottom:14px;border-left:4px solid #2196F3;">
+                        <div style="font-size:0.78rem;color:#666;margin-bottom:4px;">🎓 Formation choisie</div>
+                        <div style="font-weight:700;color:#222;font-size:0.95rem;">${_formNom}</div>
+                        <div style="font-size:0.78rem;color:#555;margin-top:2px;">Niveau ${_niveau} · ${_formDuree}</div>
+                    </div>` : ''}
+                    <div style="background:#FFF8E1;border-radius:16px;padding:14px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start;">
+                        <div style="font-size:1.2rem;">⏳</div>
+                        <div>
+                            <div style="font-weight:700;color:#E65100;font-size:0.85rem;">En attente de validation</div>
+                            <div style="font-size:0.78rem;color:#777;margin-top:3px;">Un administrateur va examiner votre demande et activer votre compte. Vous pourrez ensuite vous connecter.</div>
+                        </div>
+                    </div>
+                    <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;padding:13px;background:linear-gradient(135deg,#4CAF50,#2E7D32);color:white;border:none;border-radius:30px;font-weight:700;font-size:0.95rem;cursor:pointer;">OK, j'ai compris</button>
+                </div>
+            </div>`;
+            document.body.appendChild(cfOverlay);
         });
         
         document.getElementById('inscNiveau')?.addEventListener('change', function(e) {
@@ -1230,6 +1531,13 @@
             e.preventDefault();
             let email = document.getElementById('studentEmail').value.trim();
             let pwd = document.getElementById('studentPassword').value;
+            // Check if account is pending validation
+            const isPending = (db.comptes_pending||[]).find(p => p.email === email && p.password === pwd);
+            if(isPending) {
+                document.getElementById('studentLoginMsg').innerHTML = '⏳ Votre compte est en attente de validation par l\'administrateur.<br><small>Vous recevrez une notification dès son activation.</small>';
+                document.getElementById('studentLoginMsg').style.display = 'block';
+                return;
+            }
             let user = db.utilisateurs.find(u => u.email === email && u.password === pwd && u.role === 'etudiant');
             if(user) {
                 let inscription = db.inscriptions.find(i => i.email === email && i.statut === 'confirmee');
@@ -1350,6 +1658,12 @@
         // CERTIFICATE FUNCTIONS
         // ============================================================
 
+        function generateCertNumero() {
+            const year = new Date().getFullYear();
+            const count = (db.certificats.length + 1).toString().padStart(3, '0');
+            const site = (db.sites && db.sites.length > 0) ? db.sites[0].nom.replace(/[^A-Z]/gi,'').toUpperCase().slice(0,6) : 'PIFTIC';
+            return `N° ${year}/${count}-${site}`;
+        }
         function generateCertId() {
             return 'CERT-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2,4).toUpperCase();
         }
@@ -1429,7 +1743,7 @@
                         <div class="form-group" style="grid-column:1/-1;"><label>Référence</label>
                             <div style="display:flex;gap:8px;">
                                 <input type="text" id="certIdentifiant" placeholder="N° 2025/153-PIFTIC/CNFPPSH" style="flex:1;">
-                                <button type="button" class="btn-inscription" onclick="document.getElementById('certIdentifiant').value=generateCertId()" style="flex-shrink:0;padding:8px 12px;font-size:0.8rem;">🔄 Auto</button>
+                                <button type="button" class="btn-inscription" onclick="document.getElementById('certIdentifiant').value=generateCertNumero()" style="flex-shrink:0;padding:8px 12px;font-size:0.8rem;">🔄 Auto</button>
                             </div>
                         </div>
                     </div>
@@ -1499,7 +1813,7 @@
             document.getElementById('certMention').value = cert ? (cert.mention||'Bien') : 'Bien';
             document.getElementById('certLieuDeliv').value = cert ? (cert.lieuDeliv||'Antananarivo') : 'Antananarivo';
             document.getElementById('certDate').value = cert ? (cert.date||new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
-            document.getElementById('certIdentifiant').value = cert ? (cert.identifiant||generateCertId()) : generateCertId();
+            document.getElementById('certIdentifiant').value = cert ? (cert.identifiant||generateCertNumero()) : generateCertNumero();
             document.getElementById('certMsg').style.display = 'none';
         }
 
@@ -1601,7 +1915,7 @@
             return `
             <div style="background:white;max-width:720px;margin:0 auto;font-family:Arial,sans-serif;font-size:13px;color:#111;padding:0;position:relative;box-shadow:0 4px 20px rgba(0,0,0,0.15);">
                 <!-- Bordure verte celtique -->
-                <div style="border:10px solid transparent;border-image:repeating-linear-gradient(90deg,#2E7D32 0px,#2E7D32 10px,#66BB6A 10px,#66BB6A 20px) 10;padding:20px 28px;">
+                <div style="border:8px solid #2E7D32;border-image:repeating-linear-gradient(90deg,#1B5E20 0px,#1B5E20 8px,#4CAF50 8px,#4CAF50 16px,#81C784 16px,#81C784 20px,#4CAF50 20px,#4CAF50 28px) 8;padding:18px;position:relative;">
 
                     <!-- LOGOS en haut -->
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
@@ -1652,6 +1966,11 @@
                         En foi de quoi, le présent Attestation lui est délivrée pour servir et valoir ce que de droit.
                     </div>
 
+                    <!-- QR Code vérification -->
+                    <div style="position:absolute;bottom:18px;right:18px;text-align:center;">
+                        <div id="qr_${cert.id}" style="width:60px;height:60px;"></div>
+                        <div style="font-size:0.48rem;color:#777;margin-top:2px;">Vérification</div>
+                    </div>
                     <!-- Lieu & date + signatures -->
                     <div style="text-align:right;font-size:0.78rem;color:#333;margin-bottom:16px;">
                         ${escapeHtml(lieuDeliv)} le, ${dateDeliv}
@@ -1735,6 +2054,20 @@
 
             // Logo PIFTIC (droite) - image réelle
             doc.addImage(newPifticImgData, 'PNG', W-34, 8, 22, 22);
+
+            // ── WATERMARK anti-falsification ──
+            doc.saveGraphicsState();
+            doc.setGState(new doc.GState({opacity: 0.07}));
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(52);
+            doc.setTextColor(0, 100, 0);
+            for(let wy = 40; wy < H; wy += 55) {
+                for(let wx = -20; wx < W+20; wx += 90) {
+                    doc.text('PIFTIC CNFPPSH', wx, wy, {angle: 35});
+                }
+            }
+            doc.restoreGraphicsState();
+            doc.setTextColor(0,0,0);
 
             // Référence
             doc.setFont('helvetica', 'normal');
@@ -1954,9 +2287,506 @@
         
         // niveau-btn listeners supprimés (affichage unique toutes formations)
         
+
+        // ══════════════════════════════════════════════════
+        // CHARTS - Dashboard graphs
+        // ══════════════════════════════════════════════════
+        function renderDashboardCharts() {
+            // Chart 1: Répartition par niveau
+            const niveaux = {A:0, B:0, C:0};
+            db.apprenants.forEach(a => {
+                let insc = db.inscriptions.find(i=>i.email===a.email);
+                if(insc) {
+                    let form = db.formations.find(f=>f.id===insc.formationId);
+                    if(form) niveaux[form.niveau] = (niveaux[form.niveau]||0) + 1;
+                }
+            });
+            const ctx1 = document.getElementById('chartNiveau');
+            if(ctx1) new Chart(ctx1, {
+                type:'doughnut',
+                data:{ labels:['Niveau A','Niveau B','Niveau C'], datasets:[{data:[niveaux.A,niveaux.B,niveaux.C], backgroundColor:['#4CAF50','#2196F3','#9C27B0'], borderWidth:2}]},
+                options:{responsive:true,plugins:{legend:{position:'bottom'}}}
+            });
+
+            // Chart 2: Inscriptions par formation (top 5)
+            const formCount = {};
+            db.inscriptions.forEach(i => {
+                let f = db.formations.find(fo=>fo.id===i.formationId);
+                if(f) formCount[f.nom] = (formCount[f.nom]||0)+1;
+            });
+            const sorted = Object.entries(formCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+            const ctx2 = document.getElementById('chartFormations');
+            if(ctx2) new Chart(ctx2, {
+                type:'bar',
+                data:{labels:sorted.map(x=>x[0].slice(0,18)), datasets:[{label:'Inscriptions',data:sorted.map(x=>x[1]),backgroundColor:'#2196F3',borderRadius:8}]},
+                options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+            });
+
+            // Chart 3: Réussite vs Échec (dynamique selon notes réelles)
+            let reussi=0, echec=0, sansnote=0;
+            db.apprenants.forEach(a => {
+                let m = getMoyenneGenerale(a.id);
+                if(m !== null) { if(m >= 10) reussi++; else echec++; }
+                else sansnote++;
+            });
+            const ctx3 = document.getElementById('chartReussite');
+            if(ctx3) {
+                const labels = [], dataVals = [], colors = [];
+                if(reussi > 0)   { labels.push('Admis (≥10)');    dataVals.push(reussi);   colors.push('#4CAF50'); }
+                if(echec > 0)    { labels.push('Non admis (<10)'); dataVals.push(echec);    colors.push('#F44336'); }
+                if(sansnote > 0) { labels.push('Sans notes');      dataVals.push(sansnote); colors.push('#9E9E9E'); }
+                if(dataVals.length === 0) { dataVals.push(1); labels.push('Aucune donnée'); colors.push('#E0E0E0'); }
+                new Chart(ctx3, {
+                    type:'pie',
+                    data:{ labels, datasets:[{ data:dataVals, backgroundColor:colors, borderWidth:2 }] },
+                    options:{ responsive:true, plugins:{ legend:{ position:'bottom' },
+                        tooltip:{ callbacks:{ label: ctx => {
+                            const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+                            const pct = total > 0 ? Math.round(ctx.parsed/total*100) : 0;
+                            return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                        }}}
+                    }}
+                });
+            }
+        }
+
+        // ══════════════════════════════════════════════════
+        // EXPORT CSV
+        // ══════════════════════════════════════════════════
+        function exportCSV(type) {
+            let rows = [], filename = '';
+            if(type==='inscriptions') {
+                filename = 'inscriptions_piftic.csv';
+                rows.push(['Nom','Prénom','Email','Formation','Statut','Date']);
+                db.inscriptions.forEach(i => {
+                    let f = db.formations.find(fo=>fo.id===i.formationId);
+                    rows.push([i.nom,i.prenom,i.email,f?.nom||'',i.statut,i.date||'']);
+                });
+            } else {
+                filename = 'apprenants_piftic.csv';
+                rows.push(['Nom','Prénom','Email','Moyenne','Statut']);
+                db.apprenants.forEach(a => {
+                    let mg = getMoyenneGenerale(a.id);
+                    rows.push([a.nom,a.prenom,a.email,mg!==null?mg.toFixed(2):'—',mg!==null&&mg>=10?'Admis':'En cours']);
+                });
+            }
+            const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+            const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href=url; a.download=filename; a.click();
+            URL.revokeObjectURL(url);
+            showToast('✅ Export CSV téléchargé !');
+        }
+
+        // ══════════════════════════════════════════════════
+        // EXPORT XLSX (complet)
+        // ══════════════════════════════════════════════════
+        function exportXLSX() {
+            if(typeof XLSX === 'undefined') { showToast('⚠️ Bibliothèque XLSX non chargée'); return; }
+            const wb = XLSX.utils.book_new();
+            // Sheet inscriptions
+            const inscData = [['Nom','Prénom','Email','Formation','Statut']];
+            db.inscriptions.forEach(i=>{let f=db.formations.find(fo=>fo.id===i.formationId);inscData.push([i.nom,i.prenom,i.email,f?.nom||'',i.statut]);});
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(inscData), 'Inscriptions');
+            // Sheet apprenants
+            const appData = [['Nom','Prénom','Email','Moyenne','Statut']];
+            db.apprenants.forEach(a=>{let mg=getMoyenneGenerale(a.id);appData.push([a.nom,a.prenom,a.email,mg!==null?parseFloat(mg.toFixed(2)):null,mg!==null&&mg>=10?'Admis':'En cours']);});
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(appData), 'Apprenants');
+            // Sheet certificats
+            const certData = [['N° Certificat','Nom','Prénom','Formation','Date']];
+            db.certificats.forEach(c=>{let a=db.apprenants.find(x=>x.id===c.apprenantId)||{};let f=db.formations.find(x=>x.id===c.formationId)||{};certData.push([c.identifiant||c.id,a.nom||'',a.prenom||'',f.nom||'',c.date||'']);});
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(certData), 'Certificats');
+            XLSX.writeFile(wb, 'piftic_export_complet.xlsx');
+            showToast('✅ Export XLSX téléchargé !');
+        }
+
+        // ══════════════════════════════════════════════════
+        // CALENDRIER DES SESSIONS
+        // ══════════════════════════════════════════════════
+        function loadCalendrier() {
+            const container = document.getElementById('sessionsCalendar');
+            if(!container) return;
+            if(!db.sessions || db.sessions.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--gray);">📅 Aucune session planifiée. Cliquez sur "+ Nouvelle session" pour en ajouter une.</div>';
+                return;
+            }
+            const months = {};
+            db.sessions.forEach(s => {
+                const month = s.dateDebut ? s.dateDebut.slice(0,7) : 'Sans date';
+                if(!months[month]) months[month] = [];
+                months[month].push(s);
+            });
+            let html = '';
+            Object.keys(months).sort().forEach(month => {
+                const label = month !== 'Sans date' ? new Date(month+'-01').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}) : 'Sans date';
+                html += `<div style="margin-bottom:22px;"><h4 style="color:var(--primary);font-size:0.9rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--primary);">${label}</h4>`;
+                html += `<div style="display:flex;flex-direction:column;gap:8px;">`;
+                months[month].forEach(s => {
+                    const form = db.formations.find(f=>f.id===parseInt(s.formationId))||{nom:'—'};
+                    const site = db.sites ? (db.sites.find(si=>si.id===parseInt(s.siteId))||{nom:'—'}) : {nom:'—'};
+                    const form2 = db.formateurs.find(fo=>fo.id===parseInt(s.formateurId));
+                    const debut = s.dateDebut ? new Date(s.dateDebut).toLocaleDateString('fr-FR') : '—';
+                    const fin = s.dateFin ? new Date(s.dateFin).toLocaleDateString('fr-FR') : '—';
+                    const niv = db.formations.find(f=>f.id===parseInt(s.formationId))?.niveau||'';
+                    const colors = {A:'#4CAF50',B:'#2196F3',C:'#9C27B0'};
+                    html += `<div style="background:var(--card);border-radius:14px;padding:14px 18px;box-shadow:0 2px 6px rgba(0,0,0,0.06);border-left:4px solid ${colors[niv]||'#ccc'};display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                        <div>
+                            <div style="font-weight:700;font-size:0.9rem;">${form.nom} <span style="background:${colors[niv]||'#ccc'};color:white;padding:2px 8px;border-radius:20px;font-size:0.72rem;margin-left:6px;">Niv. ${niv||'?'}</span></div>
+                            <div style="font-size:0.78rem;color:var(--gray);margin-top:4px;">📅 ${debut} → ${fin} &nbsp;|&nbsp; 🗺️ ${site.nom} &nbsp;|&nbsp; 👨‍🏫 ${form2?form2.nom+' '+form2.prenom:'—'} &nbsp;|&nbsp; 👥 Max: ${s.capacite||'?'}</div>
+                        </div>
+                        <button onclick="deleteSession(${s.id})" style="background:#F44336;color:white;border:none;padding:6px 14px;border-radius:20px;cursor:pointer;font-size:0.78rem;">🗑️</button>
+                    </div>`;
+                });
+                html += `</div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function showSessionModal(id) {
+            const s = id ? db.sessions.find(x=>x.id===id) : null;
+            document.getElementById('sessionId').value = s ? s.id : '';
+            // Fill formation select
+            const selF = document.getElementById('sessionFormation');
+            selF.innerHTML = '<option value="">— Choisir —</option>';
+            db.formations.forEach(f=>selF.innerHTML+=`<option value="${f.id}" ${s&&s.formationId==f.id?'selected':''}>[${f.niveau}] ${f.nom}</option>`);
+            // Fill site select
+            const selS = document.getElementById('sessionSite');
+            selS.innerHTML = '<option value="">— Choisir un site —</option>';
+            if(db.sites) db.sites.forEach(si=>selS.innerHTML+=`<option value="${si.id}" ${s&&s.siteId==si.id?'selected':''}>${si.nom}</option>`);
+            // Fill formateur select
+            const selFo = document.getElementById('sessionFormateur');
+            selFo.innerHTML = '<option value="">— Choisir un formateur —</option>';
+            db.formateurs.forEach(fo=>selFo.innerHTML+=`<option value="${fo.id}" ${s&&s.formateurId==fo.id?'selected':''}>${fo.nom} ${fo.prenom}</option>`);
+            if(s) {
+                document.getElementById('sessionDebut').value = s.dateDebut||'';
+                document.getElementById('sessionFin').value = s.dateFin||'';
+                document.getElementById('sessionCapacite').value = s.capacite||15;
+            } else {
+                document.getElementById('sessionDebut').value = '';
+                document.getElementById('sessionFin').value = '';
+                document.getElementById('sessionCapacite').value = 15;
+            }
+            document.getElementById('sessionModal').style.display = 'flex';
+        }
+
+        function deleteSession(id) {
+            if(!confirm('Supprimer cette session ?')) return;
+            db.sessions = db.sessions.filter(s=>s.id!==id);
+            save(); loadCalendrier(); showToast('Session supprimée.');
+        }
+
+        document.getElementById('sessionForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = document.getElementById('sessionId').value;
+            const obj = {
+                formationId: parseInt(document.getElementById('sessionFormation').value),
+                siteId: parseInt(document.getElementById('sessionSite').value)||null,
+                formateurId: parseInt(document.getElementById('sessionFormateur').value)||null,
+                dateDebut: document.getElementById('sessionDebut').value,
+                dateFin: document.getElementById('sessionFin').value,
+                capacite: parseInt(document.getElementById('sessionCapacite').value)||15
+            };
+            if(id) {
+                let s = db.sessions.find(x=>x.id===parseInt(id));
+                if(s) Object.assign(s, obj);
+            } else {
+                obj.id = db.sessions.length ? Math.max(...db.sessions.map(s=>s.id))+1 : 1;
+                db.sessions.push(obj);
+            }
+            save(); closeModal('sessionModal'); loadCalendrier();
+            showToast('✅ Session enregistrée !');
+        });
+
+        // ══════════════════════════════════════════════════
+        // SITES PIFTIC
+        // ══════════════════════════════════════════════════
+        function loadSites() {
+            const tbody = document.querySelector('#sitesTable tbody');
+            if(!tbody) return;
+            if(!db.sites || db.sites.length===0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);">Aucun site enregistré.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = db.sites.map(s=>`
+                <tr>
+                    <td><strong>${s.nom}</strong></td>
+                    <td>${s.localisation||'—'}</td>
+                    <td>${s.responsable||'—'}</td>
+                    <td>${s.tel||'—'}</td>
+                    <td>
+                        <button class="action-btn edit-btn" onclick="showSiteModal(${s.id})">✏️</button>
+                        <button class="action-btn delete-btn" onclick="deleteSite(${s.id})">🗑️</button>
+                    </td>
+                </tr>`).join('');
+        }
+
+        function showSiteModal(id) {
+            const s = id ? db.sites.find(x=>x.id===id) : null;
+            document.getElementById('siteId').value = s ? s.id : '';
+            document.getElementById('siteNom').value = s ? s.nom : '';
+            document.getElementById('siteLoc').value = s ? s.localisation : '';
+            document.getElementById('siteResp').value = s ? s.responsable : '';
+            document.getElementById('siteTel').value = s ? s.tel : '';
+            document.getElementById('siteModal').style.display = 'flex';
+        }
+
+        function deleteSite(id) {
+            if(!confirm('Supprimer ce site ?')) return;
+            db.sites = db.sites.filter(s=>s.id!==id);
+            save(); loadSites(); showToast('Site supprimé.');
+        }
+
+        document.getElementById('siteForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = document.getElementById('siteId').value;
+            const obj = {
+                nom: document.getElementById('siteNom').value,
+                localisation: document.getElementById('siteLoc').value,
+                responsable: document.getElementById('siteResp').value,
+                tel: document.getElementById('siteTel').value
+            };
+            if(id) {
+                let s = db.sites.find(x=>x.id===parseInt(id));
+                if(s) Object.assign(s, obj);
+            } else {
+                obj.id = db.sites.length ? Math.max(...db.sites.map(s=>s.id))+1 : 1;
+                db.sites.push(obj);
+            }
+            save(); closeModal('siteModal'); loadSites();
+            showToast('✅ Site enregistré !');
+        });
+
+
+        // ── QR CODE in PDF (async) ──
+        function addQRtoPDF(doc, cert, app, form, W, H, filename) {
+            try {
+                const qrData = 'PIFTIC|' + (cert.identifiant||cert.id) + '|' + app.nom + ' ' + app.prenom + '|' + form.nom;
+                const qrDiv = document.createElement('div');
+                qrDiv.style.cssText = 'position:fixed;left:-9999px;top:-9999px;';
+                document.body.appendChild(qrDiv);
+                new QRCode(qrDiv, { text: qrData, width: 80, height: 80, colorDark: '#1B5E20', colorLight: '#ffffff' });
+                setTimeout(() => {
+                    try {
+                        const qrImg = qrDiv.querySelector('canvas');
+                        if(qrImg) {
+                            doc.addImage(qrImg.toDataURL('image/png'), 'PNG', W-28, H-32, 22, 22);
+                            doc.setFontSize(5); doc.setFont('helvetica','normal'); doc.setTextColor(120,120,120);
+                            doc.text('Scan pour vérifier', W-17, H-7, {align:'center'});
+                        }
+                    } catch(e) {}
+                    document.body.removeChild(qrDiv);
+                    doc.save(filename);
+                }, 400);
+            } catch(e) {
+                doc.save(filename);
+            }
+        }
+
+        // ── DB MIGRATION: ensure new fields exist ──
+        function migrateDB() {
+            if(!db.sessions) db.sessions = [];
+            if(!db.comptes_pending) db.comptes_pending = [];
+            if(!db.sites) db.sites = [
+                { id:1, nom:"PIFTIC Ampandrianomby", localisation:"Antananarivo", responsable:"SOLOFONIAINA Nirina", tel:"+261 34 00 000 01" },
+                { id:2, nom:"PIFTIC Toamasina", localisation:"Toamasina", responsable:"", tel:"" },
+                { id:3, nom:"PIFTIC Fianarantsoa", localisation:"Fianarantsoa", responsable:"", tel:"" }
+            ];
+        }
+
+
+        // ══════════════════════════════════════════════════
+        // SOCIAL LOGIN / SIGNUP (simulation — à connecter à Firebase/OAuth)
+        // ══════════════════════════════════════════════════
+        function socialSignup(provider) {
+            const providerName = provider === 'google' ? 'Google' : 'Facebook';
+            const providerColor = provider === 'google' ? '#EA4335' : '#1877F2';
+
+            const overlay = document.createElement('div');
+            overlay.id = 'socialOverlay';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+            overlay.innerHTML = `
+            <div style="background:white;border-radius:24px;padding:0;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;">
+                <div style="background:${providerColor};padding:18px 24px;display:flex;align-items:center;justify-content:space-between;">
+                    <div style="color:white;font-weight:700;font-size:1rem;">${provider==='google'?'🔵':'📘'} Inscription via ${providerName}</div>
+                    <button onclick="document.getElementById('socialOverlay').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">×</button>
+                </div>
+
+                <!-- Étape 1 : Email -->
+                <div id="sStep1" style="padding:24px;">
+                    <p style="color:#555;font-size:0.85rem;margin-bottom:16px;">Entrez votre email ${providerName}</p>
+                    <input id="sEmail" type="email" placeholder="exemple@${provider==='google'?'gmail.com':'facebook.com'}" autocomplete="email"
+                        style="width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.95rem;box-sizing:border-box;margin-bottom:12px;"
+                        onkeydown="if(event.key==='Enter') sSuivant1('${provider}')">
+                    <div id="sMsg1" style="display:none;color:#F44336;font-size:0.82rem;margin-bottom:10px;padding:8px 12px;background:#FFF3F3;border-radius:10px;"></div>
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="document.getElementById('socialOverlay').remove()" style="flex:1;padding:11px;background:transparent;color:#888;border:1px solid #ddd;border-radius:30px;cursor:pointer;">Annuler</button>
+                        <button onclick="sSuivant1('${provider}')" style="flex:2;padding:11px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;">Suivant →</button>
+                    </div>
+                </div>
+
+                <!-- Étape 2 : Formation -->
+                <div id="sStep2" style="display:none;padding:24px;">
+                    <p style="color:#555;font-size:0.85rem;margin-bottom:6px;">✅ Email : <strong id="sEmailDisplay"></strong></p>
+                    <p style="color:#555;font-size:0.85rem;margin-bottom:16px;">Choisissez votre formation</p>
+                    <div style="margin-bottom:10px;">
+                        <label style="font-size:0.8rem;font-weight:600;color:#444;display:block;margin-bottom:4px;">Niveau *</label>
+                        <select id="sNiveau" onchange="sFiltrerFormations()" style="width:100%;padding:11px 12px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.9rem;box-sizing:border-box;">
+                            <option value="">— Choisir un niveau —</option>
+                            <option value="A">Permis TIC A — Débutant</option>
+                            <option value="B">Permis TIC B — Intermédiaire</option>
+                            <option value="C">Permis TIC C — Avancé</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label style="font-size:0.8rem;font-weight:600;color:#444;display:block;margin-bottom:4px;">Formation *</label>
+                        <select id="sFormation" style="width:100%;padding:11px 12px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.9rem;box-sizing:border-box;">
+                            <option value="">— Choisir d'abord un niveau —</option>
+                        </select>
+                    </div>
+                    <div id="sMsg2" style="display:none;color:#F44336;font-size:0.82rem;margin-bottom:10px;padding:8px 12px;background:#FFF3F3;border-radius:10px;"></div>
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="sRetour()" style="flex:1;padding:11px;background:transparent;color:#888;border:1px solid #ddd;border-radius:30px;cursor:pointer;">← Retour</button>
+                        <button onclick="sConfirmer('${provider}')" style="flex:2;padding:11px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;">✅ S'inscrire</button>
+                    </div>
+                </div>
+            </div>`;
+            document.body.appendChild(overlay);
+        }
+
+        function sSuivant1(provider) {
+            const email = document.getElementById('sEmail').value.trim();
+            const msg = document.getElementById('sMsg1');
+            if(!email || !/\S+@\S+\.\S+/.test(email)) { msg.textContent='Veuillez entrer un email valide.'; msg.style.display='block'; return; }
+            if(db.utilisateurs.find(u=>u.email===email) || (db.comptes_pending||[]).find(p=>p.email===email)) {
+                msg.textContent='Cet email est déjà utilisé. Connectez-vous plutôt.'; msg.style.display='block'; return;
+            }
+            msg.style.display='none';
+            document.getElementById('sEmailDisplay').textContent = email;
+            document.getElementById('sStep1').style.display='none';
+            document.getElementById('sStep2').style.display='block';
+            sFiltrerFormations();
+        }
+
+        function sFiltrerFormations() {
+            const niveau = document.getElementById('sNiveau').value;
+            const sel = document.getElementById('sFormation');
+            sel.innerHTML = '<option value="">— Choisir une formation —</option>';
+            db.formations.filter(f => !niveau || f.niveau === niveau).forEach(f => {
+                sel.innerHTML += `<option value="${f.id}">[${f.niveau}] ${f.nom}</option>`;
+            });
+        }
+
+        function sRetour() {
+            document.getElementById('sStep2').style.display='none';
+            document.getElementById('sStep1').style.display='block';
+        }
+
+        function sConfirmer(provider) {
+            const providerName = provider === 'google' ? 'Google' : 'Facebook';
+            const email = document.getElementById('sEmail').value.trim();
+            const niveau = document.getElementById('sNiveau').value;
+            const formationId = parseInt(document.getElementById('sFormation').value) || null;
+            const msg = document.getElementById('sMsg2');
+            if(!niveau) { msg.textContent='Veuillez choisir un niveau.'; msg.style.display='block'; return; }
+            if(!formationId) { msg.textContent='Veuillez choisir une formation.'; msg.style.display='block'; return; }
+            // Extract name from email
+            const namePart = email.split('@')[0].replace(/[._\-\d]/g,' ').trim();
+            const parts = namePart.split(' ').filter(Boolean);
+            const prenom = parts[0] ? parts[0].charAt(0).toUpperCase()+parts[0].slice(1) : 'Utilisateur';
+            const nom = parts.slice(1).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ') || providerName;
+            const pwd = 'social_' + Math.random().toString(36).slice(-8);
+            if(!db.comptes_pending) db.comptes_pending = [];
+            db.comptes_pending.push({ id:'p_'+Date.now(), nom, prenom, email, password:pwd, niveau, formationId, source:provider, dateInscription:new Date().toLocaleDateString('fr-FR') });
+            db.inscriptions.push({ id:generateId(db.inscriptions), nom, prenom, email, niveau, formationId, date:new Date().toISOString().split('T')[0], statut:'en_attente', password:pwd });
+            save();
+            document.getElementById('socialOverlay').remove();
+            closeModal('inscriptionModal');
+            // Afficher modale de confirmation
+// providerName already declared above
+            const formation = db.formations.find(f => f.id === formationId);
+            const confirmOverlay = document.createElement('div');
+            confirmOverlay.id = 'inscConfirmOverlay';
+            confirmOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+            confirmOverlay.innerHTML = `
+            <div style="background:white;border-radius:24px;padding:0;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;animation:slideUp 0.4s ease;">
+                <style>@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}</style>
+                <div style="background:linear-gradient(135deg,#4CAF50,#2E7D32);padding:28px 24px;text-align:center;">
+                    <div style="font-size:3rem;margin-bottom:8px;">✅</div>
+                    <div style="color:white;font-weight:800;font-size:1.15rem;">Demande envoyée !</div>
+                    <div style="color:rgba(255,255,255,0.85);font-size:0.82rem;margin-top:4px;">via ${providerName}</div>
+                </div>
+                <div style="padding:24px;">
+                    <div style="background:#F1F8E9;border-radius:16px;padding:16px;margin-bottom:16px;border-left:4px solid #4CAF50;">
+                        <div style="font-size:0.78rem;color:#666;margin-bottom:6px;">📧 Email</div>
+                        <div style="font-weight:700;color:#222;font-size:0.95rem;">${email}</div>
+                    </div>
+                    <div style="background:#E3F2FD;border-radius:16px;padding:16px;margin-bottom:16px;border-left:4px solid #2196F3;">
+                        <div style="font-size:0.78rem;color:#666;margin-bottom:6px;">🎓 Formation choisie</div>
+                        <div style="font-weight:700;color:#222;font-size:0.95rem;">${formation ? formation.nom : ''}</div>
+                        <div style="font-size:0.78rem;color:#555;margin-top:2px;">Niveau ${niveau} · ${formation ? formation.duree+'h' : ''}</div>
+                    </div>
+                    <div style="background:#FFF8E1;border-radius:16px;padding:14px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start;">
+                        <div style="font-size:1.2rem;">⏳</div>
+                        <div>
+                            <div style="font-weight:700;color:#E65100;font-size:0.85rem;">En attente de validation</div>
+                            <div style="font-size:0.78rem;color:#777;margin-top:3px;">Un administrateur va examiner votre demande et activer votre compte. Vous pourrez ensuite vous connecter avec votre email.</div>
+                        </div>
+                    </div>
+                    <button onclick="document.getElementById('inscConfirmOverlay').remove()" style="width:100%;padding:13px;background:linear-gradient(135deg,#4CAF50,#2E7D32);color:white;border:none;border-radius:30px;font-weight:700;font-size:0.95rem;cursor:pointer;">OK, j'ai compris</button>
+                </div>
+            </div>`;
+            document.body.appendChild(confirmOverlay);
+        }
+
+        function confirmSocialSignup(provider) { sConfirmer(provider); }
+
+        function socialLogin(provider) {
+            const providerName = provider === 'google' ? 'Google' : 'Facebook';
+            const providerColor = provider === 'google' ? '#EA4335' : '#1877F2';
+            const overlay = document.createElement('div');
+            overlay.id = 'socialLoginOverlay';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;';
+            overlay.innerHTML = `<div style="background:white;border-radius:24px;padding:36px 32px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <div style="font-size:2.5rem;margin-bottom:12px;">${provider==='google'?'🔵':'📘'}</div>
+                <h3 style="margin-bottom:8px;font-size:1.1rem;">Connexion via ${providerName}</h3>
+                <p style="color:#666;font-size:0.85rem;margin-bottom:20px;">Entrez l'email associé à votre compte ${providerName}</p>
+                <input id="socialLoginEmail" type="email" placeholder="Votre email" style="width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius:12px;margin-bottom:16px;font-size:0.9rem;box-sizing:border-box;">
+                <div id="socialLoginMsg" style="display:none;font-size:0.82rem;margin-bottom:10px;"></div>
+                <button onclick="confirmSocialLogin('${provider}')" style="width:100%;padding:12px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;font-size:0.95rem;cursor:pointer;margin-bottom:10px;">Se connecter</button>
+                <button onclick="document.getElementById('socialLoginOverlay').remove()" style="width:100%;padding:10px;background:transparent;color:#888;border:1px solid #ddd;border-radius:30px;font-size:0.88rem;cursor:pointer;">Annuler</button>
+            </div>`;
+            document.body.appendChild(overlay);
+        }
+
+        function confirmSocialLogin(provider) {
+            const email = document.getElementById('socialLoginEmail').value.trim();
+            const msgEl = document.getElementById('socialLoginMsg');
+            if(!email) { msgEl.textContent='Veuillez entrer votre email.'; msgEl.style.cssText='display:block;color:#F44336;'; return; }
+            // Check pending
+            const isPending = (db.comptes_pending||[]).find(p => p.email === email && p.source === provider);
+            if(isPending) {
+                msgEl.innerHTML='⏳ Votre compte est en attente de validation.<br><small>Contactez l\'administrateur.</small>';
+                msgEl.style.cssText='display:block;color:#FF9800;'; return;
+            }
+            const user = db.utilisateurs.find(u => u.email === email && u.source === provider && u.role === 'etudiant');
+            if(user) {
+                let inscription = db.inscriptions.find(i => i.email === email && i.statut === 'confirmee');
+                document.getElementById('socialLoginOverlay').remove();
+                closeModal('studentLoginModal');
+                currentUser = user; currentRole = 'etudiant';
+                document.getElementById('public-section').style.display = 'none';
+                document.getElementById('studentDashboard').style.display = 'block';
+                if(inscription) loadStudentDashboard(user, inscription);
+            } else {
+                msgEl.innerHTML='❌ Aucun compte trouvé. <a href="#" onclick="document.getElementById(\'socialLoginOverlay\').remove();showInscription();" style="color:#4CAF50;">Créer un compte</a>';
+                msgEl.style.cssText='display:block;color:#F44336;';
+            }
+        }
+
         window.onload = function() {
             setTimeout(() => { let l = document.getElementById('loader'); if(l) l.style.display = 'none'; }, 800);
             loadDB();
+            migrateDB();
             updateStats();
             displayAllFormations();
             document.getElementById('footer-content').innerHTML = `<div><h3>PERMIS TIC</h3><p>${db.siteContent.address}<br>${db.siteContent.phone}<br>${db.siteContent.email}</p></div>`;
