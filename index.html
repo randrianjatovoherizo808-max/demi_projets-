@@ -1181,8 +1181,18 @@
                 db.utilisateurs.push({ id: p.id, email: p.email, password: p.password||'', nom: p.nom, prenom: p.prenom, role: 'etudiant', actif: true, source: p.source });
             }
             db.comptes_pending = db.comptes_pending.filter(x => x.id !== id);
+            // Also confirm the inscription
+            const insc = db.inscriptions.find(x => x.email === p.email);
+            if(insc) { insc.statut = 'confirmee'; }
+            // Ensure apprenant exists
+            if(!db.apprenants.find(a => a.email === p.email)) {
+                db.apprenants.push({id: p.id, nom: p.nom, prenom: p.prenom, email: p.email, formations: p.formationId ? [p.formationId] : []});
+            }
             save();
             loadInscriptions();
+            loadApprenants();
+            loadDashboard();
+            updateStats();
             showToast('✅ Compte validé ! L\'utilisateur peut maintenant se connecter.');
         }
 
@@ -1199,7 +1209,7 @@
             if(i && i.statut==='en_attente') {
                 i.statut='confirmee';
                 if(!db.apprenants.find(a=>a.email===i.email)) db.apprenants.push({id:i.id, nom:i.nom, prenom:i.prenom, email:i.email, formations:[i.formationId]});
-                if(!db.utilisateurs.find(u=>u.email===i.email)) db.utilisateurs.push({id:i.id, email:i.email, password:i.password, nom:i.nom, prenom:i.prenom, role:'etudiant'});
+                if(!db.utilisateurs.find(u=>u.email===i.email)) db.utilisateurs.push({id:i.id, email:i.email, password:i.password||'', nom:i.nom, prenom:i.prenom, role:'etudiant', source:i.source||'email', actif:true});
                 save();
                 loadInscriptions();
                 loadApprenants();
@@ -1594,7 +1604,7 @@
 
             // Badges
             document.getElementById('profileBadges').innerHTML = `
-                <span style="padding:4px 12px;border-radius:30px;font-size:0.76rem;font-weight:700;background:rgba(76,175,80,0.12);color:#2E7D32;border:1px solid rgba(76,175,80,0.3);">✅ Compte actif</span>
+                <span style="padding:4px 12px;border-radius:30px;font-size:0.76rem;font-weight:700;background:rgba(76,175,80,0.12);color:#2E7D32;border:1px solid rgba(76,175,80,0.3);">${inscription.statut==="confirmee"?"✅ Compte actif":"⏳ En attente de validation"}</span>
                 <span style="padding:4px 12px;border-radius:30px;font-size:0.76rem;font-weight:700;background:rgba(33,150,243,0.12);color:#1565C0;border:1px solid rgba(33,150,243,0.3);">🎓 Niveau ${inscription.niveau} — ${nv[inscription.niveau]||''}</span>
                 ${f ? `<span style="padding:4px 12px;border-radius:30px;font-size:0.76rem;font-weight:700;background:rgba(255,152,0,0.12);color:#E65100;border:1px solid rgba(255,152,0,0.3);">📘 ${escapeHtml(f.nom)}</span>` : ''}
             `;
@@ -1645,9 +1655,9 @@
                         <div class="info-row"><div style="font-size:1.8rem;">📧</div><div><div style="font-size:.7rem;color:var(--gray);">Email</div><div style="font-weight:700;word-break:break-all;">${escapeHtml(user.email||'')}</div></div></div>
                         <div class="info-row"><div style="font-size:1.8rem;">🎓</div><div><div style="font-size:.7rem;color:var(--gray);">Niveau</div><div style="font-weight:700;">Permis TIC ${inscription.niveau} — ${nv[inscription.niveau]||''}</div></div></div>
                         <div class="info-row"><div style="font-size:1.8rem;">📅</div><div><div style="font-size:.7rem;color:var(--gray);">Date d'inscription</div><div style="font-weight:700;">${formatDate(inscription.date)}</div></div></div>
-                        <div style="background:rgba(76,175,80,.1);border-radius:14px;padding:14px;display:flex;gap:12px;align-items:center;border:1px solid rgba(76,175,80,.25);">
-                            <div style="font-size:1.8rem;">✅</div>
-                            <div><div style="font-size:.7rem;color:var(--gray);">Statut</div><div style="font-weight:700;color:#2E7D32;">Confirmé & Actif</div></div>
+                        <div style="background:\${inscription.statut==='confirmee'?'rgba(76,175,80,.1)':'rgba(255,152,0,.1)'};border-radius:14px;padding:14px;display:flex;gap:12px;align-items:center;border:1px solid \${inscription.statut==='confirmee'?'rgba(76,175,80,.25)':'rgba(255,152,0,.25)'};">
+                            <div style="font-size:1.8rem;">\${inscription.statut==='confirmee'?'✅':'⏳'}</div>
+                            <div><div style="font-size:.7rem;color:var(--gray);">Statut du compte</div><div style="font-weight:700;color:\${inscription.statut==='confirmee'?'#2E7D32':'#E65100'}">\${inscription.statut==='confirmee'?'Confirmé & Actif':'En attente de validation'}</div></div>
                         </div>
                         ${inscription.telephone ? `<div class="info-row"><div style="font-size:1.8rem;">📞</div><div><div style="font-size:.7rem;color:var(--gray);">Téléphone</div><div style="font-weight:700;">${escapeHtml(inscription.telephone||'')}</div></div></div>` : ''}
                     </div>
@@ -2595,193 +2605,312 @@
 
 
         // ══════════════════════════════════════════════════
-        // SOCIAL LOGIN / SIGNUP (simulation — à connecter à Firebase/OAuth)
+        // SOCIAL LOGIN / SIGNUP — Flux logique unifié
         // ══════════════════════════════════════════════════
-        function socialSignup(provider) {
-            const providerName = provider === 'google' ? 'Google' : 'Facebook';
-            const providerColor = provider === 'google' ? '#EA4335' : '#1877F2';
 
-            const overlay = document.createElement('div');
-            overlay.id = 'socialOverlay';
-            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
-            overlay.innerHTML = `
-            <div style="background:white;border-radius:24px;padding:0;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;">
-                <div style="background:${providerColor};padding:18px 24px;display:flex;align-items:center;justify-content:space-between;">
-                    <div style="color:white;font-weight:700;font-size:1rem;">${provider==='google'?'🔵':'📘'} Inscription via ${providerName}</div>
-                    <button onclick="document.getElementById('socialOverlay').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">×</button>
-                </div>
-
-                <!-- Étape 1 : Email -->
-                <div id="sStep1" style="padding:24px;">
-                    <p style="color:#555;font-size:0.85rem;margin-bottom:16px;">Entrez votre email ${providerName}</p>
-                    <input id="sEmail" type="email" placeholder="exemple@${provider==='google'?'gmail.com':'facebook.com'}" autocomplete="email"
-                        style="width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.95rem;box-sizing:border-box;margin-bottom:12px;"
-                        onkeydown="if(event.key==='Enter') sSuivant1('${provider}')">
-                    <div id="sMsg1" style="display:none;color:#F44336;font-size:0.82rem;margin-bottom:10px;padding:8px 12px;background:#FFF3F3;border-radius:10px;"></div>
-                    <div style="display:flex;gap:10px;">
-                        <button onclick="document.getElementById('socialOverlay').remove()" style="flex:1;padding:11px;background:transparent;color:#888;border:1px solid #ddd;border-radius:30px;cursor:pointer;">Annuler</button>
-                        <button onclick="sSuivant1('${provider}')" style="flex:2;padding:11px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;">Suivant →</button>
-                    </div>
-                </div>
-
-                <!-- Étape 2 : Formation -->
-                <div id="sStep2" style="display:none;padding:24px;">
-                    <p style="color:#555;font-size:0.85rem;margin-bottom:6px;">✅ Email : <strong id="sEmailDisplay"></strong></p>
-                    <p style="color:#555;font-size:0.85rem;margin-bottom:16px;">Choisissez votre formation</p>
-                    <div style="margin-bottom:10px;">
-                        <label style="font-size:0.8rem;font-weight:600;color:#444;display:block;margin-bottom:4px;">Niveau *</label>
-                        <select id="sNiveau" onchange="sFiltrerFormations()" style="width:100%;padding:11px 12px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.9rem;box-sizing:border-box;">
-                            <option value="">— Choisir un niveau —</option>
-                            <option value="A">Permis TIC A — Débutant</option>
-                            <option value="B">Permis TIC B — Intermédiaire</option>
-                            <option value="C">Permis TIC C — Avancé</option>
-                        </select>
-                    </div>
-                    <div style="margin-bottom:16px;">
-                        <label style="font-size:0.8rem;font-weight:600;color:#444;display:block;margin-bottom:4px;">Formation *</label>
-                        <select id="sFormation" style="width:100%;padding:11px 12px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.9rem;box-sizing:border-box;">
-                            <option value="">— Choisir d'abord un niveau —</option>
-                        </select>
-                    </div>
-                    <div id="sMsg2" style="display:none;color:#F44336;font-size:0.82rem;margin-bottom:10px;padding:8px 12px;background:#FFF3F3;border-radius:10px;"></div>
-                    <div style="display:flex;gap:10px;">
-                        <button onclick="sRetour()" style="flex:1;padding:11px;background:transparent;color:#888;border:1px solid #ddd;border-radius:30px;cursor:pointer;">← Retour</button>
-                        <button onclick="sConfirmer('${provider}')" style="flex:2;padding:11px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;">✅ S'inscrire</button>
-                    </div>
-                </div>
-            </div>`;
-            document.body.appendChild(overlay);
+        // Logos SVG partagés
+        function _getProviderLogo(provider) {
+            return provider === 'google'
+                ? `<svg width="24" height="24" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`
+                : `<svg width="24" height="24" viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.514c-1.491 0-1.956.93-1.956 1.886v2.265h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>`;
         }
 
-        function sSuivant1(provider) {
-            const email = document.getElementById('sEmail').value.trim();
-            const msg = document.getElementById('sMsg1');
-            if(!email || !/\S+@\S+\.\S+/.test(email)) { msg.textContent='Veuillez entrer un email valide.'; msg.style.display='block'; return; }
-            if(db.utilisateurs.find(u=>u.email===email) || (db.comptes_pending||[]).find(p=>p.email===email)) {
-                msg.textContent='Cet email est déjà utilisé. Connectez-vous plutôt.'; msg.style.display='block'; return;
-            }
-            msg.style.display='none';
-            document.getElementById('sEmailDisplay').textContent = email;
-            document.getElementById('sStep1').style.display='none';
-            document.getElementById('sStep2').style.display='block';
-            sFiltrerFormations();
+        function _showSocialMsg(id, text, type) {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.innerHTML = text;
+            el.style.cssText = type === 'error'
+                ? 'display:block;color:#F44336;background:#FFF3F3;border-radius:10px;padding:9px 13px;font-size:0.82rem;margin-bottom:10px;'
+                : 'display:block;color:#E65100;background:#FFF8E1;border-radius:10px;padding:9px 13px;font-size:0.82rem;margin-bottom:10px;';
         }
 
-        function sFiltrerFormations() {
-            const niveau = document.getElementById('sNiveau').value;
-            const sel = document.getElementById('sFormation');
-            sel.innerHTML = '<option value="">— Choisir une formation —</option>';
-            db.formations.filter(f => !niveau || f.niveau === niveau).forEach(f => {
-                sel.innerHTML += `<option value="${f.id}">[${f.niveau}] ${f.nom}</option>`;
-            });
+        function _connecterEtudiant(user, provider) {
+            // Trouver l'inscription : priorité confirmée, sinon la première trouvée
+            const inscription = db.inscriptions.find(i => i.email === user.email && i.statut === 'confirmee')
+                             || db.inscriptions.find(i => i.email === user.email);
+            currentUser = user;
+            currentRole = 'etudiant';
+            document.getElementById('public-section').style.display = 'none';
+            document.getElementById('studentDashboard').style.display = 'block';
+            if(inscription) loadStudentDashboard(user, inscription);
+            const name = provider === 'google' ? 'Google' : 'Facebook';
+            showToast('✅ Connecté via ' + name + ' — Bienvenue ' + (user.prenom || user.nom || '') + ' !');
         }
 
-        function sRetour() {
-            document.getElementById('sStep2').style.display='none';
-            document.getElementById('sStep1').style.display='block';
-        }
-
-        function sConfirmer(provider) {
-            const providerName = provider === 'google' ? 'Google' : 'Facebook';
-            const email = document.getElementById('sEmail').value.trim();
-            const niveau = document.getElementById('sNiveau').value;
-            const formationId = parseInt(document.getElementById('sFormation').value) || null;
-            const msg = document.getElementById('sMsg2');
-            if(!niveau) { msg.textContent='Veuillez choisir un niveau.'; msg.style.display='block'; return; }
-            if(!formationId) { msg.textContent='Veuillez choisir une formation.'; msg.style.display='block'; return; }
-            // Extract name from email
-            const namePart = email.split('@')[0].replace(/[._\-\d]/g,' ').trim();
-            const parts = namePart.split(' ').filter(Boolean);
-            const prenom = parts[0] ? parts[0].charAt(0).toUpperCase()+parts[0].slice(1) : 'Utilisateur';
-            const nom = parts.slice(1).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ') || providerName;
-            const pwd = 'social_' + Math.random().toString(36).slice(-8);
-            if(!db.comptes_pending) db.comptes_pending = [];
-            db.comptes_pending.push({ id:'p_'+Date.now(), nom, prenom, email, password:pwd, niveau, formationId, source:provider, dateInscription:new Date().toLocaleDateString('fr-FR') });
-            db.inscriptions.push({ id:generateId(db.inscriptions), nom, prenom, email, niveau, formationId, date:new Date().toISOString().split('T')[0], statut:'en_attente', password:pwd });
-            save();
-            document.getElementById('socialOverlay').remove();
-            closeModal('inscriptionModal');
-            // Afficher modale de confirmation
-// providerName already declared above
-            const formation = db.formations.find(f => f.id === formationId);
-            const confirmOverlay = document.createElement('div');
-            confirmOverlay.id = 'inscConfirmOverlay';
-            confirmOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
-            confirmOverlay.innerHTML = `
-            <div style="background:white;border-radius:24px;padding:0;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;animation:slideUp 0.4s ease;">
-                <style>@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}</style>
-                <div style="background:linear-gradient(135deg,#4CAF50,#2E7D32);padding:28px 24px;text-align:center;">
-                    <div style="font-size:3rem;margin-bottom:8px;">✅</div>
-                    <div style="color:white;font-weight:800;font-size:1.15rem;">Demande envoyée !</div>
-                    <div style="color:rgba(255,255,255,0.85);font-size:0.82rem;margin-top:4px;">via ${providerName}</div>
-                </div>
-                <div style="padding:24px;">
-                    <div style="background:#F1F8E9;border-radius:16px;padding:16px;margin-bottom:16px;border-left:4px solid #4CAF50;">
-                        <div style="font-size:0.78rem;color:#666;margin-bottom:6px;">📧 Email</div>
-                        <div style="font-weight:700;color:#222;font-size:0.95rem;">${email}</div>
-                    </div>
-                    <div style="background:#E3F2FD;border-radius:16px;padding:16px;margin-bottom:16px;border-left:4px solid #2196F3;">
-                        <div style="font-size:0.78rem;color:#666;margin-bottom:6px;">🎓 Formation choisie</div>
-                        <div style="font-weight:700;color:#222;font-size:0.95rem;">${formation ? formation.nom : ''}</div>
-                        <div style="font-size:0.78rem;color:#555;margin-top:2px;">Niveau ${niveau} · ${formation ? formation.duree+'h' : ''}</div>
-                    </div>
-                    <div style="background:#FFF8E1;border-radius:16px;padding:14px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start;">
-                        <div style="font-size:1.2rem;">⏳</div>
-                        <div>
-                            <div style="font-weight:700;color:#E65100;font-size:0.85rem;">En attente de validation</div>
-                            <div style="font-size:0.78rem;color:#777;margin-top:3px;">Un administrateur va examiner votre demande et activer votre compte. Vous pourrez ensuite vous connecter avec votre email.</div>
-                        </div>
-                    </div>
-                    <button onclick="document.getElementById('inscConfirmOverlay').remove()" style="width:100%;padding:13px;background:linear-gradient(135deg,#4CAF50,#2E7D32);color:white;border:none;border-radius:30px;font-weight:700;font-size:0.95rem;cursor:pointer;">OK, j'ai compris</button>
-                </div>
-            </div>`;
-            document.body.appendChild(confirmOverlay);
-        }
-
-        function confirmSocialSignup(provider) { sConfirmer(provider); }
-
+        // ─── CONNEXION VIA GOOGLE/FACEBOOK (depuis espace apprenant) ───
         function socialLogin(provider) {
-            const providerName = provider === 'google' ? 'Google' : 'Facebook';
+            const providerName  = provider === 'google' ? 'Google' : 'Facebook';
             const providerColor = provider === 'google' ? '#EA4335' : '#1877F2';
+            const providerLogo  = _getProviderLogo(provider);
+            const placeholder   = provider === 'google' ? 'votre@gmail.com' : 'votre@facebook.com';
+
+            // Fermer la modale de connexion si ouverte
+            closeModal('studentLoginModal');
+
             const overlay = document.createElement('div');
             overlay.id = 'socialLoginOverlay';
-            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;';
-            overlay.innerHTML = `<div style="background:white;border-radius:24px;padding:36px 32px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-                <div style="font-size:2.5rem;margin-bottom:12px;">${provider==='google'?'🔵':'📘'}</div>
-                <h3 style="margin-bottom:8px;font-size:1.1rem;">Connexion via ${providerName}</h3>
-                <p style="color:#666;font-size:0.85rem;margin-bottom:20px;">Entrez l'email associé à votre compte ${providerName}</p>
-                <input id="socialLoginEmail" type="email" placeholder="Votre email" style="width:100%;padding:10px 14px;border:2px solid #e0e0e0;border-radius:12px;margin-bottom:16px;font-size:0.9rem;box-sizing:border-box;">
-                <div id="socialLoginMsg" style="display:none;font-size:0.82rem;margin-bottom:10px;"></div>
-                <button onclick="confirmSocialLogin('${provider}')" style="width:100%;padding:12px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;font-size:0.95rem;cursor:pointer;margin-bottom:10px;">Se connecter</button>
-                <button onclick="document.getElementById('socialLoginOverlay').remove()" style="width:100%;padding:10px;background:transparent;color:#888;border:1px solid #ddd;border-radius:30px;font-size:0.88rem;cursor:pointer;">Annuler</button>
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+            overlay.innerHTML = `
+            <div style="background:white;border-radius:24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;animation:popIn 0.25s ease;">
+                <style>@keyframes popIn{from{transform:scale(0.92);opacity:0}to{transform:scale(1);opacity:1}}</style>
+                <div style="background:${providerColor};padding:22px 24px;text-align:center;">
+                    <div style="margin-bottom:8px;">${providerLogo}</div>
+                    <div style="color:white;font-weight:800;font-size:1rem;">Se connecter avec ${providerName}</div>
+                    <div style="color:rgba(255,255,255,0.82);font-size:0.78rem;margin-top:3px;">Espace Apprenant — Permis TIC</div>
+                </div>
+                <div style="padding:22px 24px;">
+                    <div style="margin-bottom:12px;">
+                        <label style="font-size:0.78rem;font-weight:700;color:#444;display:block;margin-bottom:5px;">Adresse email ${providerName}</label>
+                        <input id="socialLoginEmail" type="email" placeholder="${placeholder}"
+                            autocomplete="email"
+                            style="width:100%;padding:11px 14px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.9rem;box-sizing:border-box;outline:none;transition:border .2s;"
+                            onfocus="this.style.borderColor='${providerColor}'" onblur="this.style.borderColor='#e0e0e0'"
+                            onkeydown="if(event.key==='Enter')document.getElementById('socialLoginPwd').focus()">
+                    </div>
+                    <div style="margin-bottom:6px;">
+                        <label style="font-size:0.78rem;font-weight:700;color:#444;display:block;margin-bottom:5px;">Mot de passe du compte Permis TIC</label>
+                        <input id="socialLoginPwd" type="password" placeholder="Mot de passe"
+                            autocomplete="current-password"
+                            style="width:100%;padding:11px 14px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.9rem;box-sizing:border-box;outline:none;transition:border .2s;"
+                            onfocus="this.style.borderColor='${providerColor}'" onblur="this.style.borderColor='#e0e0e0'"
+                            onkeydown="if(event.key==='Enter')confirmSocialLogin('${provider}')">
+                    </div>
+                    <div id="socialLoginMsg" style="display:none;font-size:0.82rem;margin-bottom:10px;"></div>
+                    <button onclick="confirmSocialLogin('${provider}')"
+                        style="width:100%;padding:13px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;font-size:0.95rem;margin-bottom:10px;">
+                        Se connecter
+                    </button>
+                    <button onclick="document.getElementById('socialLoginOverlay').remove()"
+                        style="width:100%;padding:11px;background:transparent;color:#888;border:1px solid #ddd;border-radius:30px;cursor:pointer;font-size:0.88rem;">
+                        Annuler
+                    </button>
+                    <div style="text-align:center;margin-top:14px;font-size:0.78rem;color:#999;">
+                        Pas encore inscrit ? 
+                        <a href="#" onclick="document.getElementById('socialLoginOverlay').remove();socialSignup('${provider}');" 
+                            style="color:${providerColor};font-weight:700;">Créer un compte</a>
+                    </div>
+                </div>
             </div>`;
             document.body.appendChild(overlay);
+            setTimeout(() => { const el = document.getElementById('socialLoginEmail'); if(el) el.focus(); }, 100);
         }
 
         function confirmSocialLogin(provider) {
-            const email = document.getElementById('socialLoginEmail').value.trim();
-            const msgEl = document.getElementById('socialLoginMsg');
-            if(!email) { msgEl.textContent='Veuillez entrer votre email.'; msgEl.style.cssText='display:block;color:#F44336;'; return; }
-            // Check pending
-            const isPending = (db.comptes_pending||[]).find(p => p.email === email && p.source === provider);
-            if(isPending) {
-                msgEl.innerHTML='⏳ Votre compte est en attente de validation.<br><small>Contactez l\'administrateur.</small>';
-                msgEl.style.cssText='display:block;color:#FF9800;'; return;
+            const email  = (document.getElementById('socialLoginEmail').value || '').trim();
+            const pwd    = document.getElementById('socialLoginPwd').value || '';
+            if(!email || !/\S+@\S+\.\S+/.test(email)) {
+                _showSocialMsg('socialLoginMsg', '⚠️ Veuillez saisir un email valide.', 'error'); return;
             }
-            const user = db.utilisateurs.find(u => u.email === email && u.source === provider && u.role === 'etudiant');
+            if(!pwd) {
+                _showSocialMsg('socialLoginMsg', '⚠️ Veuillez saisir votre mot de passe.', 'error'); return;
+            }
+            // 1. Compte en attente ?
+            const pending = (db.comptes_pending || []).find(p => p.email === email);
+            if(pending) {
+                _showSocialMsg('socialLoginMsg', '⏳ Votre compte est <strong>en attente de validation</strong> par l\'administrateur. Revenez quand il sera activé.', 'warn'); return;
+            }
+            // 2. Chercher utilisateur actif avec ce mot de passe
+            const user = db.utilisateurs.find(u => u.email === email && u.password === pwd && u.role === 'etudiant');
             if(user) {
-                let inscription = db.inscriptions.find(i => i.email === email && i.statut === 'confirmee');
                 document.getElementById('socialLoginOverlay').remove();
-                closeModal('studentLoginModal');
-                currentUser = user; currentRole = 'etudiant';
-                document.getElementById('public-section').style.display = 'none';
-                document.getElementById('studentDashboard').style.display = 'block';
-                if(inscription) loadStudentDashboard(user, inscription);
-            } else {
-                msgEl.innerHTML='❌ Aucun compte trouvé. <a href="#" onclick="document.getElementById(\'socialLoginOverlay\').remove();showInscription();" style="color:#4CAF50;">Créer un compte</a>';
-                msgEl.style.cssText='display:block;color:#F44336;';
+                _connecterEtudiant(user, provider);
+                return;
             }
+            // 3. L'email existe mais mauvais mot de passe
+            const exists = db.utilisateurs.find(u => u.email === email && u.role === 'etudiant');
+            if(exists) {
+                _showSocialMsg('socialLoginMsg', '❌ Mot de passe incorrect. Vérifiez et réessayez.', 'error'); return;
+            }
+            // 4. Compte inexistant
+            _showSocialMsg('socialLoginMsg',
+                '❌ Aucun compte trouvé pour cet email. <a href="#" onclick="document.getElementById(\'socialLoginOverlay\').remove();socialSignup(\'' + provider + '\');" style="color:#4CAF50;font-weight:700;">Créer un compte →</a>',
+                'error');
         }
+
+        // ─── INSCRIPTION VIA GOOGLE/FACEBOOK ───
+        function socialSignup(provider) {
+            const providerName  = provider === 'google' ? 'Google' : 'Facebook';
+            const providerColor = provider === 'google' ? '#4285F4' : '#1877F2';
+            const providerLogo  = _getProviderLogo(provider);
+            const placeholder   = provider === 'google' ? 'votre@gmail.com' : 'votre@facebook.com';
+
+            closeModal('inscriptionModal');
+            // Retirer toute ancienne overlay
+            const old = document.getElementById('socialOverlay');
+            if(old) old.remove();
+
+            const overlay = document.createElement('div');
+            overlay.id = 'socialOverlay';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto;';
+            overlay.innerHTML = `
+            <div style="background:white;border-radius:20px;max-width:400px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.25);overflow:hidden;animation:popIn 0.25s ease;margin:auto;">
+                <style>@keyframes popIn{from{transform:scale(0.92);opacity:0}to{transform:scale(1);opacity:1}}</style>
+                <div style="padding:24px 24px 16px;text-align:center;border-bottom:2px solid #f0f0f0;">
+                    <div style="margin-bottom:10px;">${providerLogo}</div>
+                    <div style="font-size:1rem;font-weight:800;color:#202124;">Créer un compte avec ${providerName}</div>
+                    <div style="font-size:0.78rem;color:#666;margin-top:3px;">Inscription — Permis TIC</div>
+                </div>
+                <div style="padding:20px 24px;">
+                    <!-- Étape 1 : Email -->
+                    <div id="sStep1">
+                        <p style="font-size:0.82rem;color:#555;margin-bottom:12px;">Saisissez l'email de votre compte ${providerName} pour commencer :</p>
+                        <label style="font-size:0.78rem;font-weight:700;color:#444;display:block;margin-bottom:5px;">Email ${providerName} *</label>
+                        <input id="sEmail" type="email" placeholder="${placeholder}" autocomplete="email"
+                            style="width:100%;padding:11px 14px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.9rem;box-sizing:border-box;margin-bottom:14px;outline:none;"
+                            onfocus="this.style.borderColor='${providerColor}'" onblur="this.style.borderColor='#e0e0e0'"
+                            onkeydown="if(event.key==='Enter')sVerifierEmail('${provider}')">
+                        <div id="sMsg1" style="display:none;margin-bottom:10px;"></div>
+                        <div style="display:flex;gap:8px;">
+                            <button onclick="document.getElementById('socialOverlay').remove()" style="flex:1;padding:11px;background:transparent;color:#666;border:1px solid #ddd;border-radius:30px;cursor:pointer;font-size:0.85rem;">Annuler</button>
+                            <button onclick="sVerifierEmail('${provider}')" style="flex:2;padding:11px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;font-size:0.9rem;">Continuer →</button>
+                        </div>
+                        <div style="text-align:center;margin-top:12px;font-size:0.78rem;color:#999;">
+                            Déjà inscrit ? <a href="#" onclick="document.getElementById('socialOverlay').remove();socialLogin('${provider}');" style="color:${providerColor};font-weight:700;">Se connecter</a>
+                        </div>
+                    </div>
+                    <!-- Étape 2 : Formulaire complet (caché au départ) -->
+                    <div id="sStep2" style="display:none;">
+                        <div style="background:#E8F5E9;border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+                            <span style="font-size:1.2rem;">📧</span>
+                            <div>
+                                <div style="font-size:0.7rem;color:#388E3C;font-weight:700;">Compte ${providerName} détecté</div>
+                                <div id="sEmailDisplay" style="font-size:0.85rem;color:#1B5E20;font-weight:600;"></div>
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                            <div>
+                                <label style="font-size:0.75rem;font-weight:700;color:#444;display:block;margin-bottom:3px;">Nom *</label>
+                                <input id="sNom" type="text" placeholder="Votre nom" style="width:100%;padding:9px 11px;border:2px solid #e0e0e0;border-radius:11px;font-size:0.85rem;box-sizing:border-box;">
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem;font-weight:700;color:#444;display:block;margin-bottom:3px;">Prénom *</label>
+                                <input id="sPrenom" type="text" placeholder="Votre prénom" style="width:100%;padding:9px 11px;border:2px solid #e0e0e0;border-radius:11px;font-size:0.85rem;box-sizing:border-box;">
+                            </div>
+                        </div>
+                        <div style="margin-bottom:8px;">
+                            <label style="font-size:0.75rem;font-weight:700;color:#444;display:block;margin-bottom:3px;">Mot de passe pour Permis TIC *</label>
+                            <input id="sPassword" type="password" placeholder="Choisissez un mot de passe (min. 4 car.)" style="width:100%;padding:9px 11px;border:2px solid #e0e0e0;border-radius:11px;font-size:0.85rem;box-sizing:border-box;">
+                        </div>
+                        <div style="margin-bottom:8px;">
+                            <label style="font-size:0.75rem;font-weight:700;color:#444;display:block;margin-bottom:3px;">Niveau *</label>
+                            <select id="sNiveau" onchange="sFiltrerF()" style="width:100%;padding:9px 11px;border:2px solid #e0e0e0;border-radius:11px;font-size:0.85rem;box-sizing:border-box;">
+                                <option value="">— Choisir un niveau —</option>
+                                <option value="A">Permis TIC A — Débutant</option>
+                                <option value="B">Permis TIC B — Intermédiaire</option>
+                                <option value="C">Permis TIC C — Avancé</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom:12px;">
+                            <label style="font-size:0.75rem;font-weight:700;color:#444;display:block;margin-bottom:3px;">Formation *</label>
+                            <select id="sFormation" style="width:100%;padding:9px 11px;border:2px solid #e0e0e0;border-radius:11px;font-size:0.85rem;box-sizing:border-box;">
+                                <option value="">— Choisir d'abord un niveau —</option>
+                            </select>
+                        </div>
+                        <div id="sMsg2" style="display:none;margin-bottom:10px;"></div>
+                        <div style="display:flex;gap:8px;">
+                            <button onclick="document.getElementById('sStep1').style.display='block';document.getElementById('sStep2').style.display='none';" style="flex:1;padding:11px;background:transparent;color:#666;border:1px solid #ddd;border-radius:30px;cursor:pointer;font-size:0.85rem;">← Retour</button>
+                            <button onclick="sFinaliser('${provider}')" style="flex:2;padding:11px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;font-size:0.9rem;">✅ S'inscrire</button>
+                        </div>
+                    </div>
+                </div>
+                <div style="padding:10px 24px 16px;text-align:center;border-top:1px solid #f0f0f0;">
+                    <div style="font-size:0.7rem;color:#bbb;">En continuant, vous acceptez les conditions d'utilisation de Permis TIC</div>
+                </div>
+            </div>`;
+            document.body.appendChild(overlay);
+            setTimeout(() => { const el = document.getElementById('sEmail'); if(el) el.focus(); }, 100);
+        }
+
+        function sSelectAccount(el) { el.style.borderColor = '#4285F4'; }
+
+        function sFiltrerF() {
+            const n = document.getElementById('sNiveau').value;
+            const s = document.getElementById('sFormation');
+            s.innerHTML = '<option value="">— Choisir une formation —</option>';
+            db.formations.filter(f => !n || f.niveau === n).forEach(f => {
+                s.innerHTML += `<option value="${f.id}">[${f.niveau}] ${f.nom}</option>`;
+            });
+        }
+
+        // Étape 1 : vérifier l'email avant d'afficher le formulaire
+        function sVerifierEmail(provider) {
+            const email = (document.getElementById('sEmail').value || '').trim();
+            if(!email || !/\S+@\S+\.\S+/.test(email)) {
+                _showSocialMsg('sMsg1', '⚠️ Veuillez saisir un email valide.', 'error'); return;
+            }
+            // Déjà un compte actif → proposer la connexion
+            const user = db.utilisateurs.find(u => u.email === email && u.role === 'etudiant');
+            if(user) {
+                _showSocialMsg('sMsg1',
+                    '✅ Un compte actif existe pour cet email. <a href="#" onclick="document.getElementById(\'socialOverlay\').remove();socialLogin(\'' + provider + '\');" style="color:#4CAF50;font-weight:700;">Se connecter →</a>',
+                    'warn'); return;
+            }
+            // Compte en attente → informer
+            const pending = (db.comptes_pending || []).find(p => p.email === email);
+            if(pending) {
+                _showSocialMsg('sMsg1', '⏳ Un compte en attente existe déjà pour cet email. L\'administrateur doit encore le valider.', 'warn'); return;
+            }
+            // Nouveau → passer à l'étape 2
+            document.getElementById('sEmailDisplay').textContent = email;
+            document.getElementById('sStep1').style.display = 'none';
+            document.getElementById('sStep2').style.display = 'block';
+            setTimeout(() => { const el = document.getElementById('sNom'); if(el) el.focus(); }, 50);
+        }
+
+        // Ancien alias gardé pour compatibilité
+        function sContinuer(provider) { sVerifierEmail(provider); }
+
+        function sFinaliser(provider) {
+            const email       = (document.getElementById('sEmail') ? document.getElementById('sEmail').value.trim() : '');
+            const nom         = (document.getElementById('sNom')    ? document.getElementById('sNom').value.trim()    : '');
+            const prenom      = (document.getElementById('sPrenom') ? document.getElementById('sPrenom').value.trim() : '');
+            const pwd         = (document.getElementById('sPassword') ? document.getElementById('sPassword').value     : '');
+            const niveau      = (document.getElementById('sNiveau')   ? document.getElementById('sNiveau').value       : '');
+            const formationId = parseInt(document.getElementById('sFormation') ? document.getElementById('sFormation').value : '') || null;
+            const providerName = provider === 'google' ? 'Google' : 'Facebook';
+
+            if(!nom || !prenom)      { _showSocialMsg('sMsg2', '⚠️ Nom et prénom sont obligatoires.', 'error'); return; }
+            if(!pwd || pwd.length<4) { _showSocialMsg('sMsg2', '⚠️ Mot de passe trop court (minimum 4 caractères).', 'error'); return; }
+            if(!niveau)              { _showSocialMsg('sMsg2', '⚠️ Veuillez choisir un niveau.', 'error'); return; }
+            if(!formationId)         { _showSocialMsg('sMsg2', '⚠️ Veuillez choisir une formation.', 'error'); return; }
+
+            const formation = db.formations.find(f => f.id === formationId);
+            if(!db.comptes_pending) db.comptes_pending = [];
+            db.comptes_pending.push({ id: 'p_' + Date.now(), nom, prenom, email, password: pwd, niveau, formationId, source: provider, dateInscription: new Date().toLocaleDateString('fr-FR') });
+            db.inscriptions.push({ id: generateId(db.inscriptions), nom, prenom, email, niveau, formationId, date: new Date().toISOString().split('T')[0], statut: 'en_attente', password: pwd, source: provider });
+            save();
+            document.getElementById('socialOverlay').remove();
+
+            // Confirmation visuelle
+            const cfO = document.createElement('div');
+            cfO.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+            cfO.innerHTML = `<div style="background:white;border-radius:24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;animation:popIn 0.3s ease;">
+                <div style="background:linear-gradient(135deg,#4CAF50,#2E7D32);padding:26px 24px;text-align:center;">
+                    <div style="font-size:2.8rem;margin-bottom:6px;">✅</div>
+                    <div style="color:white;font-weight:800;font-size:1.05rem;">Demande envoyée !</div>
+                    <div style="color:rgba(255,255,255,0.85);font-size:0.78rem;margin-top:3px;">via ${providerName}</div>
+                </div>
+                <div style="padding:20px 22px;">
+                    <div style="background:#F1F8E9;border-radius:13px;padding:12px;margin-bottom:9px;border-left:4px solid #4CAF50;">
+                        <div style="font-size:0.72rem;color:#666;margin-bottom:2px;">📧 Email</div>
+                        <div style="font-weight:700;color:#222;font-size:0.88rem;">${email}</div>
+                    </div>
+                    <div style="background:#E3F2FD;border-radius:13px;padding:12px;margin-bottom:9px;border-left:4px solid #2196F3;">
+                        <div style="font-size:0.72rem;color:#666;margin-bottom:2px;">🎓 Formation</div>
+                        <div style="font-weight:700;color:#222;font-size:0.88rem;">${formation ? formation.nom : ''} — Niveau ${niveau}</div>
+                    </div>
+                    <div style="background:#FFF8E1;border-radius:13px;padding:11px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start;">
+                        <div>⏳</div>
+                        <div style="font-size:0.78rem;color:#777;"><strong style="color:#E65100;">En attente de validation.</strong> Un administrateur va activer votre compte. Une fois activé, connectez-vous depuis "Espace Apprenant" avec votre email et mot de passe.</div>
+                    </div>
+                    <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;padding:12px;background:linear-gradient(135deg,#4CAF50,#2E7D32);color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;">OK, j'ai compris</button>
+                </div>
+            </div>`;
+            document.body.appendChild(cfO);
+        }
+
+        // Alias vides pour compatibilité ascendante
+        function sGoFormation(p){} function sGoBack(p){} function confirmSocialSignup(p){}
 
         window.onload = function() {
             setTimeout(() => { let l = document.getElementById('loader'); if(l) l.style.display = 'none'; }, 800);
@@ -2792,6 +2921,8 @@
             document.getElementById('footer-content').innerHTML = `<div><h3>PERMIS TIC</h3><p>${db.siteContent.address}<br>${db.siteContent.phone}<br>${db.siteContent.email}</p></div>`;
             let theme = localStorage.getItem('theme');
             if(theme === 'dark') document.body.classList.add('dark-mode');
+            // Ouvrir automatiquement la modale de connexion apprenant au démarrage
+            setTimeout(() => { showStudentLogin(); }, 1000);
         };
     </script>
 </body>
