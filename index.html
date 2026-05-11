@@ -647,7 +647,7 @@
     </div>
     <div class="form-group"><label>Email *</label><input type="email" id="inscEmail" required placeholder="exemple@mail.com"></div>
     <div class="form-row">
-      <div class="form-group"><label>Téléphone</label><input type="tel" id="inscTel" maxlength="13" placeholder="+261 ..."></div>
+      <div class="form-group"><label>Téléphone</label><input type="text" id="inscTel" maxlength="20" placeholder="+261 34 00 000 00" pattern="[\d\s\+\-\(\)]*"></div>
       <div class="form-group"><label>Niveau *</label><select id="inscNiveau" required><option value="">— Choisir —</option><option value="A">Permis TIC A</option><option value="B">Permis TIC B</option><option value="C">Permis TIC C</option></select></div>
     </div>
     <div class="form-group"><label>Formation *</label><select id="inscFormation" required></select></div>
@@ -2734,6 +2734,8 @@
 
             // Fermer la modale de connexion si ouverte
             closeModal('studentLoginModal');
+            const oldOvl = document.getElementById('socialLoginOverlay');
+            if(oldOvl) oldOvl.remove();
 
             const overlay = document.createElement('div');
             overlay.id = 'socialLoginOverlay';
@@ -2747,33 +2749,26 @@
                     <div style="color:rgba(255,255,255,0.82);font-size:0.78rem;margin-top:3px;">Espace Apprenant — Permis TIC</div>
                 </div>
                 <div style="padding:22px 24px;">
-                    <div style="margin-bottom:12px;">
+                    <p style="font-size:0.82rem;color:#555;margin-bottom:14px;">Saisissez l'adresse email associée à votre compte ${providerName} :</p>
+                    <div style="margin-bottom:14px;">
                         <label style="font-size:0.78rem;font-weight:700;color:#444;display:block;margin-bottom:5px;">Adresse email ${providerName}</label>
                         <input id="socialLoginEmail" type="email" placeholder="${placeholder}"
                             autocomplete="email"
                             style="width:100%;padding:11px 14px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.9rem;box-sizing:border-box;outline:none;transition:border .2s;"
                             onfocus="this.style.borderColor='${providerColor}'" onblur="this.style.borderColor='#e0e0e0'"
-                            onkeydown="if(event.key==='Enter')document.getElementById('socialLoginPwd').focus()">
-                    </div>
-                    <div style="margin-bottom:6px;">
-                        <label style="font-size:0.78rem;font-weight:700;color:#444;display:block;margin-bottom:5px;">Mot de passe du compte Permis TIC</label>
-                        <input id="socialLoginPwd" type="password" placeholder="Mot de passe"
-                            autocomplete="current-password"
-                            style="width:100%;padding:11px 14px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.9rem;box-sizing:border-box;outline:none;transition:border .2s;"
-                            onfocus="this.style.borderColor='${providerColor}'" onblur="this.style.borderColor='#e0e0e0'"
                             onkeydown="if(event.key==='Enter')confirmSocialLogin('${provider}')">
                     </div>
-                    <div id="socialLoginMsg" style="display:none;font-size:0.82rem;margin-bottom:10px;"></div>
+                    <div id="socialLoginMsg" style="display:none;font-size:0.82rem;margin-bottom:10px;border-radius:10px;padding:9px 13px;"></div>
                     <button onclick="confirmSocialLogin('${provider}')"
-                        style="width:100%;padding:13px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;font-size:0.95rem;margin-bottom:10px;">
-                        Se connecter
+                        style="width:100%;padding:13px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;font-size:0.95rem;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;">
+                        ${providerLogo} &nbsp;Continuer avec ${providerName}
                     </button>
                     <button onclick="document.getElementById('socialLoginOverlay').remove()"
                         style="width:100%;padding:11px;background:transparent;color:#888;border:1px solid #ddd;border-radius:30px;cursor:pointer;font-size:0.88rem;">
                         Annuler
                     </button>
                     <div style="text-align:center;margin-top:14px;font-size:0.78rem;color:#999;">
-                        Pas encore inscrit ? 
+                        Pas encore de compte ? 
                         <a href="#" onclick="document.getElementById('socialLoginOverlay').remove();socialSignup('${provider}');" 
                             style="color:${providerColor};font-weight:700;">Créer un compte</a>
                     </div>
@@ -2785,55 +2780,34 @@
 
         function confirmSocialLogin(provider) {
             // Recharger la DB depuis localStorage pour avoir les données les plus récentes
-            // (cas où l'admin vient de valider le compte dans un autre onglet)
             loadDB();
 
-            const email  = (document.getElementById('socialLoginEmail').value || '').trim();
-            const pwd    = document.getElementById('socialLoginPwd').value || '';
+            const email = (document.getElementById('socialLoginEmail').value || '').trim();
             if(!email || !/\S+@\S+\.\S+/.test(email)) {
-                _showSocialMsg('socialLoginMsg', '⚠️ Veuillez saisir un email valide.', 'error'); return;
-            }
-            if(!pwd) {
-                _showSocialMsg('socialLoginMsg', '⚠️ Veuillez saisir votre mot de passe.', 'error'); return;
-            }
-
-            // 1. Compte en attente de validation ?
-            const pending = (db.comptes_pending || []).find(p => p.email === email);
-            if(pending) {
-                // Vérifier quand même si l'inscription a été confirmée entre-temps
-                const inscConfirmee = db.inscriptions.find(i => i.email === email && i.statut === 'confirmee');
-                const userActif = db.utilisateurs.find(u => u.email === email && u.role === 'etudiant');
-                if(inscConfirmee && userActif && (userActif.password === pwd || pending.password === pwd)) {
-                    // Compte validé mais pending pas encore nettoyé — connecter quand même
-                    document.getElementById('socialLoginOverlay').remove();
-                    _connecterEtudiant(userActif, provider);
-                    return;
-                }
-                _showSocialMsg('socialLoginMsg', '⏳ Votre compte est <strong>en attente de validation</strong> par l\'administrateur. Revenez quand il sera activé.', 'warn'); return;
+                const msg = document.getElementById('socialLoginMsg');
+                msg.style.cssText = 'display:block;color:#F44336;background:#FFF3F3;border-radius:10px;padding:9px 13px;font-size:0.82rem;margin-bottom:10px;';
+                msg.textContent = '⚠️ Veuillez saisir une adresse email valide.';
+                return;
             }
 
-            // 2. Chercher utilisateur actif avec ce mot de passe
-            const user = db.utilisateurs.find(u => u.email === email && u.password === pwd && u.role === 'etudiant');
+            const providerName = provider === 'google' ? 'Google' : 'Facebook';
+            const msg = document.getElementById('socialLoginMsg');
+
+            // 1. Compte actif dans db.utilisateurs → connexion directe (comme vrai OAuth)
+            const user = db.utilisateurs.find(u => u.email === email && u.role === 'etudiant');
             if(user) {
                 document.getElementById('socialLoginOverlay').remove();
                 _connecterEtudiant(user, provider);
                 return;
             }
 
-            // 3. L'email existe mais mauvais mot de passe
-            const exists = db.utilisateurs.find(u => u.email === email && u.role === 'etudiant');
-            if(exists) {
-                _showSocialMsg('socialLoginMsg', '❌ Mot de passe incorrect. Vérifiez et réessayez.', 'error'); return;
-            }
-
-            // 4. Vérifier aussi dans les inscriptions confirmées (cas de synchronisation manquante)
-            const inscConfirmee = db.inscriptions.find(i => i.email === email && i.statut === 'confirmee' && i.password === pwd);
+            // 2. Inscription confirmée sans utilisateur (désynchronisation) → recréer et connecter
+            const inscConfirmee = db.inscriptions.find(i => i.email === email && i.statut === 'confirmee');
             if(inscConfirmee) {
-                // Recréer l'utilisateur s'il manque dans db.utilisateurs
                 const newUser = {
                     id: inscConfirmee.id,
                     email: inscConfirmee.email,
-                    password: inscConfirmee.password || pwd,
+                    password: inscConfirmee.password || '',
                     nom: inscConfirmee.nom,
                     prenom: inscConfirmee.prenom,
                     role: 'etudiant',
@@ -2847,10 +2821,18 @@
                 return;
             }
 
-            // 5. Compte inexistant
-            _showSocialMsg('socialLoginMsg',
-                '❌ Aucun compte trouvé pour cet email. <a href="#" onclick="document.getElementById(\'socialLoginOverlay\').remove();socialSignup(\'' + provider + '\');" style="color:#4CAF50;font-weight:700;">Créer un compte →</a>',
-                'error');
+            // 3. Compte en attente de validation
+            const pending = (db.comptes_pending || []).find(p => p.email === email);
+            if(pending) {
+                msg.style.cssText = 'display:block;color:#E65100;background:#FFF8E1;border-radius:10px;padding:9px 13px;font-size:0.82rem;margin-bottom:10px;';
+                msg.innerHTML = '⏳ Votre compte est <strong>en attente de validation</strong> par l\'administrateur. Revenez une fois qu\'il a été activé.';
+                return;
+            }
+
+            // 4. Email inconnu → proposer inscription
+            const providerColor = provider === 'google' ? '#EA4335' : '#1877F2';
+            msg.style.cssText = 'display:block;color:#F44336;background:#FFF3F3;border-radius:10px;padding:9px 13px;font-size:0.82rem;margin-bottom:10px;';
+            msg.innerHTML = `❌ Aucun compte trouvé pour cet email ${providerName}. <a href="#" onclick="document.getElementById('socialLoginOverlay').remove();socialSignup('${provider}');" style="color:${providerColor};font-weight:700;">Créer un compte →</a>`;
         }
 
         // ─── INSCRIPTION VIA GOOGLE/FACEBOOK ───
@@ -2914,10 +2896,6 @@
                             </div>
                         </div>
                         <div style="margin-bottom:8px;">
-                            <label style="font-size:0.75rem;font-weight:700;color:#444;display:block;margin-bottom:3px;">Mot de passe pour Permis TIC *</label>
-                            <input id="sPassword" type="password" placeholder="Choisissez un mot de passe (min. 4 car.)" style="width:100%;padding:9px 11px;border:2px solid #e0e0e0;border-radius:11px;font-size:0.85rem;box-sizing:border-box;">
-                        </div>
-                        <div style="margin-bottom:8px;">
                             <label style="font-size:0.75rem;font-weight:700;color:#444;display:block;margin-bottom:3px;">Niveau *</label>
                             <select id="sNiveau" onchange="sFiltrerF()" style="width:100%;padding:9px 11px;border:2px solid #e0e0e0;border-radius:11px;font-size:0.85rem;box-sizing:border-box;">
                                 <option value="">— Choisir un niveau —</option>
@@ -2931,6 +2909,9 @@
                             <select id="sFormation" style="width:100%;padding:9px 11px;border:2px solid #e0e0e0;border-radius:11px;font-size:0.85rem;box-sizing:border-box;">
                                 <option value="">— Choisir d'abord un niveau —</option>
                             </select>
+                        </div>
+                        <div style="background:#F3F4F6;border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:0.75rem;color:#555;">
+                            🔐 Votre connexion sera assurée via ${providerName} — aucun mot de passe supplémentaire requis.
                         </div>
                         <div id="sMsg2" style="display:none;margin-bottom:10px;"></div>
                         <div style="display:flex;gap:8px;">
@@ -2990,13 +2971,13 @@
             const email       = (document.getElementById('sEmail') ? document.getElementById('sEmail').value.trim() : '');
             const nom         = (document.getElementById('sNom')    ? document.getElementById('sNom').value.trim()    : '');
             const prenom      = (document.getElementById('sPrenom') ? document.getElementById('sPrenom').value.trim() : '');
-            const pwd         = (document.getElementById('sPassword') ? document.getElementById('sPassword').value     : '');
             const niveau      = (document.getElementById('sNiveau')   ? document.getElementById('sNiveau').value       : '');
             const formationId = parseInt(document.getElementById('sFormation') ? document.getElementById('sFormation').value : '') || null;
             const providerName = provider === 'google' ? 'Google' : 'Facebook';
+            // Pas de mot de passe requis pour connexion sociale — l'email sert d'identifiant unique
+            const pwd = email; // identifiant interne, non divulgué à l'utilisateur
 
             if(!nom || !prenom)      { _showSocialMsg('sMsg2', '⚠️ Nom et prénom sont obligatoires.', 'error'); return; }
-            if(!pwd || pwd.length<4) { _showSocialMsg('sMsg2', '⚠️ Mot de passe trop court (minimum 4 caractères).', 'error'); return; }
             if(!niveau)              { _showSocialMsg('sMsg2', '⚠️ Veuillez choisir un niveau.', 'error'); return; }
             if(!formationId)         { _showSocialMsg('sMsg2', '⚠️ Veuillez choisir une formation.', 'error'); return; }
 
