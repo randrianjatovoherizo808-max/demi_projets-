@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -517,6 +518,7 @@
         .status-badge { padding: 3px 10px; border-radius: 30px; font-size: 11px; font-weight: 600; display: inline-block; }
         .status-success { background: rgba(76,175,80,0.15); color: #4CAF50; }
         .status-warning { background: rgba(255,193,7,0.15); color: #FFC107; }
+        .status-danger  { background: rgba(244,67,54,0.13); color: #F44336; }
         
         .admin-login { min-height: 100vh; display: flex; justify-content: center; align-items: center; background: linear-gradient(135deg, var(--primary), var(--secondary)); padding: 20px; }
         .login-card { background: var(--card); border-radius: 32px; padding: 30px 25px; width: 100%; max-width: 380px; }
@@ -615,7 +617,7 @@
       <div class="form-group">
         <label>Téléphone</label>
         <input type="tel" id="inscTel" maxlength="13" placeholder="+261 XX XXX XX XX" oninput="validateTel(this)" autocomplete="tel">
-        <div id="inscTelMsg" style="display:none;color:#F44336;font-size:0.78rem;margin-top:4px;"></div>
+        <div id="inscTelMsg" style="display:none;color:#F44336;font-size:0.78rem;margin-top:4px;padding:5px 10px;background:#FFF3F3;border:1px solid #FFCDD2;border-radius:8px;font-weight:600;"></div>
       </div>
       <div class="form-group"><label>Niveau *</label><select id="inscNiveau" required><option value="">— Choisir —</option><option value="A">Permis TIC A</option><option value="B">Permis TIC B</option><option value="C">Permis TIC C</option></select></div>
     </div>
@@ -1139,7 +1141,22 @@
 
             // ── Inscriptions table ──
             let tbody = document.querySelector('#inscriptionsTable tbody');
-            tbody.innerHTML = db.inscriptions.map(i => { let f = db.formations.find(fo=>fo.id===i.formationId); return `<tr><td>${i.nom}</td><td>${i.prenom}</td><td>${i.email}</td><td>${f?.nom||''}</td><td><span class="status-badge ${i.statut==='confirmee'?'status-success':'status-warning'}">${i.statut}</span></td><td><button class="action-btn edit-btn" onclick="confirmInscription(${i.id})">Confirmer</button><button class="action-btn delete-btn" onclick="deleteInscription(${i.id})">Supprimer</button></td></tr>`; }).join('');
+            tbody.innerHTML = db.inscriptions.map(i => {
+                let f = db.formations.find(fo=>fo.id===i.formationId);
+                const statutLabel = i.statut==='confirmee' ? '✅ Confirmée' : i.statut==='rejete' ? '❌ Rejetée' : '⏳ En attente';
+                const statutClass = i.statut==='confirmee' ? 'status-success' : i.statut==='rejete' ? 'status-danger' : 'status-warning';
+                const sourceIcon = i.source==='google'?'🔵':i.source==='facebook'?'📘':'📧';
+                return `<tr>
+                    <td>${i.nom}</td><td>${i.prenom}</td>
+                    <td>${i.username ? `<span title="${i.email}">${sourceIcon} ${i.username}</span>` : i.email}</td>
+                    <td>${f?.nom||''}</td>
+                    <td><span class="status-badge ${statutClass}">${statutLabel}</span></td>
+                    <td>
+                        <button class="action-btn edit-btn" onclick="confirmInscription(${i.id})">Confirmer</button>
+                        <button class="action-btn delete-btn" onclick="deleteInscription(${i.id})">Supprimer</button>
+                    </td>
+                </tr>`;
+            }).join('');
         }
 
         function validerCompte(id) {
@@ -1160,10 +1177,15 @@
             }
             db.comptes_pending = db.comptes_pending.filter(x => x.id !== id);
             // ── Notifications : alerte visuelle + message à la prochaine connexion ──
-            const providerLabel = p.source==='google' ? 'Google' : p.source==='facebook' ? 'Facebook' : 'Email';
             const formation = db.formations.find(f => f.id === p.formationId);
-            const notifMsg = `🎉 Votre compte ${providerLabel} a été validé ! Vous pouvez maintenant vous connecter et accéder à la formation "${formation?.nom||''}" (Niveau ${p.niveau}).`;
-            ajouterNotification(p.email, notifMsg, 'success');
+            // Envoi email réel + notification dans l'app
+            sendValidationEmail(
+                p.email,
+                p.prenom,
+                p.username || p.email,
+                formation?.nom || '—',
+                p.niveau
+            );
             save();
             loadInscriptions();
             loadApprenants();
@@ -1425,40 +1447,65 @@
             const msgEl = document.getElementById('inscTelMsg');
             if (!msgEl) return;
             const original = input.value;
-            // Strip ALL non-digit chars except a leading +
+            // Bloquer lettres et caractères spéciaux — garder chiffres et + initial
             let cleaned = original.replace(/[^\d+]/g, '');
-            // Remove any + that is not at position 0
             cleaned = cleaned.replace(/(?!^)\+/g, '');
-            // Extract digits after optional +261 / 261 prefix
             const prefix = cleaned.startsWith('+261') ? '+261' : cleaned.startsWith('261') ? '261' : '';
             let digits = cleaned.replace(/^\+261|^261/, '').replace(/\D/g, '');
             if (digits.length > 10) digits = digits.slice(0, 10);
             input.value = prefix + digits;
-            // Feedback
-            if (/[^+\d]/.test(original) || /(?!^)\+/.test(original)) {
-                msgEl.textContent = '\u26a0\ufe0f Lettres et caract\u00e8res sp\u00e9ciaux non autoris\u00e9s.';
+
+            // Message d'erreur si l'utilisateur a tenté un caractère invalide (via paste)
+            const hadInvalid = /[^\d+]/.test(original) || /(?!^)\+/.test(original);
+            if (hadInvalid) {
+                msgEl.textContent = '⛔ Lettres et caractères spéciaux non autorisés dans ce champ.';
                 msgEl.style.display = 'block';
-            } else if (input.value.length > 0 && digits.length === 10) {
-                msgEl.style.display = 'none';
+                setTimeout(function() { msgEl.style.display = 'none'; }, 3000);
+            } else if (digits.length > 0 && digits.length < 10) {
+                msgEl.textContent = '⚠️ Numéro incomplet — ' + digits.length + '/10 chiffres saisis.';
+                msgEl.style.display = 'block';
+            } else if (digits.length === 10) {
+                msgEl.textContent = '✅ Numéro valide.';
+                msgEl.style.color = '#4CAF50';
+                msgEl.style.background = '#F1F8E9';
+                msgEl.style.borderColor = '#C5E1A5';
+                msgEl.style.display = 'block';
+                setTimeout(function() {
+                    msgEl.style.display = 'none';
+                    msgEl.style.color = '#F44336';
+                    msgEl.style.background = '#FFF3F3';
+                    msgEl.style.borderColor = '#FFCDD2';
+                }, 2000);
             } else {
                 msgEl.style.display = 'none';
             }
         }
-        // Block invalid keys directly on keydown
-        document.addEventListener('DOMContentLoaded', function() {
-            var telInput = document.getElementById('inscTel');
-            if (telInput) {
-                telInput.addEventListener('keydown', function(e) {
-                    // Allow: backspace, delete, arrows, tab, home, end, ctrl+a/c/v/x
-                    if ([8,9,35,36,37,38,39,40,46].indexOf(e.keyCode) !== -1 ||
-                        (e.ctrlKey || e.metaKey)) return;
-                    // Allow + only at position 0
-                    if (e.key === '+' && this.selectionStart === 0 && this.value.indexOf('+') === -1) return;
-                    // Block anything that is not a digit
-                    if (!/^\d$/.test(e.key)) e.preventDefault();
-                });
+        // Bloquer les touches invalides directement (keydown)
+        (function() {
+            function attachTelKeydown() {
+                var telInput = document.getElementById('inscTel');
+                if (telInput) {
+                    telInput.addEventListener('keydown', function(e) {
+                        if ([8,9,35,36,37,38,39,40,46].indexOf(e.keyCode) !== -1 || e.ctrlKey || e.metaKey) return;
+                        if (e.key === '+' && this.selectionStart === 0 && this.value.indexOf('+') === -1) return;
+                        if (!/^\d$/.test(e.key)) {
+                            e.preventDefault();
+                            var msgEl = document.getElementById('inscTelMsg');
+                            if (msgEl) {
+                                msgEl.textContent = '⛔ Caractère "' + e.key + '" non autorisé — chiffres uniquement.';
+                                msgEl.style.display = 'block';
+                                setTimeout(function() { msgEl.style.display = 'none'; }, 2500);
+                            }
+                        }
+                    });
+                }
             }
-        });
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', attachTelKeydown);
+            } else {
+                attachTelKeydown();
+            }
+        })();
 
         // Formulaire inscription
         document.getElementById('inscriptionForm')?.addEventListener('submit', function(e) {
@@ -2605,6 +2652,47 @@
         // SOCIAL LOGIN / SIGNUP — Nom d'utilisateur + Mot de passe Google (simulation)
         // ══════════════════════════════════════════════════
 
+        // ══════════════════════════════════════════════════
+        // EMAILJS CONFIG — Remplacez par vos vraies clés EmailJS
+        // Créez un compte gratuit sur https://www.emailjs.com
+        // ══════════════════════════════════════════════════
+        const EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID';   // Ex: 'service_abc123'
+        const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';  // Ex: 'template_xyz789'
+        const EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY';   // Ex: 'aBcDeFgHiJkLmNoP'
+
+        function initEmailJS() {
+            if(typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY') {
+                emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+            }
+        }
+
+        async function sendValidationEmail(toEmail, prenom, username, formationNom, niveau) {
+            // Affichage dans l'app (toujours)
+            const msgApp = `🎉 Bonjour ${prenom} ! Votre compte Google (${username}) a été validé. Vous pouvez maintenant vous connecter et accéder à la formation "${formationNom}" — Niveau ${niveau}.`;
+            ajouterNotification(toEmail, msgApp, 'success');
+
+            // Envoi email réel via EmailJS
+            if(typeof emailjs === 'undefined' || EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') {
+                console.warn('EmailJS non configure -- notification uniquement dans l\'app.');
+                return;
+            }
+            try {
+                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                    to_email   : toEmail,
+                    to_name    : prenom,
+                    username   : username,
+                    formation  : formationNom,
+                    niveau     : niveau,
+                    app_name   : 'PERMIS TIC',
+                    login_url  : window.location.href,
+                    message    : `Votre inscription à la formation "${formationNom}" (Niveau ${niveau}) a été confirmée. Connectez-vous avec votre compte Google (${username}) pour accéder à votre espace apprenant.`
+                });
+                console.log('Email de validation envoyé à', toEmail);
+            } catch(err) {
+                console.error('Erreur EmailJS :', err);
+            }
+        }
+
         // ── Notifications locales ──
         function ajouterNotification(email, message, type) {
             if(!db.notifications) db.notifications = [];
@@ -2643,51 +2731,60 @@
 
         // ── Flux inscription Google/Facebook — 3 étapes ──
         function socialSignup(provider) {
-            const providerName = provider === 'google' ? 'Google' : 'Facebook';
-            const providerColor = provider === 'google' ? '#EA4335' : '#1877F2';
-            const providerIcon = provider === 'google'
-                ? `<svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`
-                : `<svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`;
+            const providerName   = provider === 'google' ? 'Google' : 'Facebook';
+            const providerColor  = provider === 'google' ? '#EA4335' : '#1877F2';
+            const providerDomain = provider === 'google' ? 'gmail.com' : 'facebook.com';
+            // SVG icons — use regular strings to avoid nested backtick conflicts
+            const googleSVG = '<svg width="20" height="20" viewBox="0 0 48 48" style="vertical-align:middle">'
+                + '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/>'
+                + '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>'
+                + '<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>'
+                + '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>'
+                + '</svg>';
+            const fbSVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="vertical-align:middle">'
+                + '<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>'
+                + '</svg>';
+            const providerIcon = provider === 'google' ? googleSVG : fbSVG;
 
-            // Remove existing overlay if any
             const existing = document.getElementById('socialOverlay');
-            if(existing) existing.remove();
+            if (existing) existing.remove();
 
             const overlay = document.createElement('div');
             overlay.id = 'socialOverlay';
             overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+            // Build HTML using concatenation to avoid nested backtick issues
+            const h = providerColor;
             overlay.innerHTML = `
             <div style="background:white;border-radius:24px;max-width:420px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.3);overflow:hidden;">
 
                 <!-- Header -->
                 <div style="background:${providerColor};padding:18px 22px;display:flex;align-items:center;gap:12px;">
-                    ${providerIcon}
+                    <span>${providerIcon}</span>
                     <div style="color:white;font-weight:700;font-size:1rem;flex:1;">Inscription via ${providerName}</div>
-                    <!-- Barre de progression -->
                     <div style="display:flex;gap:6px;align-items:center;">
                         <div id="sDot1" style="width:10px;height:10px;border-radius:50%;background:white;opacity:1;transition:opacity 0.3s;"></div>
                         <div id="sDot2" style="width:10px;height:10px;border-radius:50%;background:white;opacity:0.35;transition:opacity 0.3s;"></div>
                         <div id="sDot3" style="width:10px;height:10px;border-radius:50%;background:white;opacity:0.35;transition:opacity 0.3s;"></div>
                     </div>
-                    <button onclick="document.getElementById('socialOverlay').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;margin-left:4px;">×</button>
+                    <button onclick="document.getElementById('socialOverlay').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;margin-left:4px;">&#x2715;</button>
                 </div>
 
-                <!-- ÉTAPE 1 : Nom d'utilisateur -->
+                <!-- ÉTAPE 1 : Email -->
                 <div id="sStep1" style="padding:26px 24px;">
                     <p style="font-size:0.82rem;color:#777;margin-bottom:4px;">Étape 1 sur 3</p>
-                    <p style="font-weight:700;font-size:1rem;color:#222;margin-bottom:4px;">Nom d'utilisateur ${providerName}</p>
-                    <p style="font-size:0.82rem;color:#888;margin-bottom:16px;">Saisissez le nom associé à votre compte ${providerName}</p>
+                    <p style="font-weight:700;font-size:1rem;color:#222;margin-bottom:4px;">Adresse email ${providerName}</p>
+                    <p style="font-size:0.82rem;color:#888;margin-bottom:16px;">Saisissez votre adresse @${providerDomain}</p>
                     <div style="position:relative;margin-bottom:12px;">
-                        <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:0.9rem;color:#aaa;">👤</span>
-                        <input id="sUsername" type="text" placeholder="Votre nom d'utilisateur ${providerName}" autocomplete="username"
-                            style="width:100%;padding:12px 14px 12px 36px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.93rem;box-sizing:border-box;outline:none;transition:border 0.2s;"
-                            onfocus="this.style.borderColor='${providerColor}'" onblur="this.style.borderColor='#e0e0e0'"
+                        <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:0.9rem;color:#aaa;">✉️</span>
+                        <input id="sUsername" type="email" placeholder="exemple@${providerDomain}" autocomplete="email"
+                            style="width:100%;padding:12px 14px 12px 38px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.93rem;box-sizing:border-box;outline:none;"
                             onkeydown="if(event.key==='Enter') sAllerEtape2('${provider}')">
                     </div>
                     <div id="sMsg1" style="display:none;color:#F44336;font-size:0.82rem;margin-bottom:10px;padding:8px 12px;background:#FFF3F3;border-radius:10px;"></div>
                     <div style="display:flex;gap:10px;margin-top:8px;">
-                        <button onclick="document.getElementById('socialOverlay').remove()" style="flex:1;padding:11px;background:transparent;color:#888;border:1.5px solid #ddd;border-radius:30px;cursor:pointer;font-size:0.88rem;">Annuler</button>
-                        <button onclick="sAllerEtape2('${provider}')" style="flex:2;padding:11px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;font-size:0.93rem;">Suivant →</button>
+                        <button onclick="document.getElementById('socialOverlay').remove()" style="flex:1;padding:11px;background:transparent;color:#888;border:1.5px solid #ddd;border-radius:30px;cursor:pointer;">Annuler</button>
+                        <button onclick="sAllerEtape2('${provider}')" style="flex:2;padding:11px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;">Suivant →</button>
                     </div>
                 </div>
 
@@ -2695,37 +2792,32 @@
                 <div id="sStep2" style="display:none;padding:26px 24px;">
                     <p style="font-size:0.82rem;color:#777;margin-bottom:4px;">Étape 2 sur 3</p>
                     <p style="font-weight:700;font-size:1rem;color:#222;margin-bottom:4px;">Mot de passe ${providerName}</p>
-                    <p style="color:#555;font-size:0.82rem;margin-bottom:6px;">Compte : <strong id="sUsernameDisplay" style="color:${providerColor};"></strong></p>
-                    <p style="font-size:0.82rem;color:#888;margin-bottom:14px;">Ce mot de passe sera utilisé pour vous connecter via ${providerName}</p>
-                    <div style="position:relative;margin-bottom:8px;">
-                        <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:0.9rem;color:#aaa;">🔒</span>
-                        <input id="sPassword" type="password" placeholder="Mot de passe ${providerName}" autocomplete="new-password"
-                            style="width:100%;padding:12px 42px 12px 36px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.93rem;box-sizing:border-box;outline:none;transition:border 0.2s;"
-                            onfocus="this.style.borderColor='${providerColor}'" onblur="this.style.borderColor='#e0e0e0'"
+                    <p style="color:#555;font-size:0.82rem;margin-bottom:14px;">Compte : <strong id="sUsernameDisplay" style="color:${providerColor};"></strong></p>
+                    <div style="position:relative;margin-bottom:10px;">
+                        <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#aaa;">🔒</span>
+                        <input id="sPassword" type="password" placeholder="Mot de passe" autocomplete="new-password"
+                            style="width:100%;padding:12px 44px 12px 38px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.93rem;box-sizing:border-box;outline:none;"
                             onkeydown="if(event.key==='Enter') sAllerEtape3('${provider}')">
-                        <button onclick="sTogglePwd('sPassword',this)" type="button"
-                            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;color:#aaa;">👁</button>
+                        <button onclick="sTogglePwd('sPassword',this)" type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;color:#aaa;">👁</button>
                     </div>
                     <div style="position:relative;margin-bottom:12px;">
-                        <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:0.9rem;color:#aaa;">🔒</span>
+                        <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#aaa;">🔒</span>
                         <input id="sPasswordConfirm" type="password" placeholder="Confirmer le mot de passe" autocomplete="new-password"
-                            style="width:100%;padding:12px 42px 12px 36px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.93rem;box-sizing:border-box;outline:none;transition:border 0.2s;"
-                            onfocus="this.style.borderColor='${providerColor}'" onblur="this.style.borderColor='#e0e0e0'"
+                            style="width:100%;padding:12px 44px 12px 38px;border:2px solid #e0e0e0;border-radius:14px;font-size:0.93rem;box-sizing:border-box;outline:none;"
                             onkeydown="if(event.key==='Enter') sAllerEtape3('${provider}')">
-                        <button onclick="sTogglePwd('sPasswordConfirm',this)" type="button"
-                            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;color:#aaa;">👁</button>
+                        <button onclick="sTogglePwd('sPasswordConfirm',this)" type="button" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;color:#aaa;">👁</button>
                     </div>
                     <div id="sMsg2" style="display:none;color:#F44336;font-size:0.82rem;margin-bottom:10px;padding:8px 12px;background:#FFF3F3;border-radius:10px;"></div>
                     <div style="display:flex;gap:10px;margin-top:8px;">
-                        <button onclick="sRetourEtape1()" style="flex:1;padding:11px;background:transparent;color:#888;border:1.5px solid #ddd;border-radius:30px;cursor:pointer;font-size:0.88rem;">← Retour</button>
-                        <button onclick="sAllerEtape3('${provider}')" style="flex:2;padding:11px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;font-size:0.93rem;">Suivant →</button>
+                        <button onclick="sRetourEtape1()" style="flex:1;padding:11px;background:transparent;color:#888;border:1.5px solid #ddd;border-radius:30px;cursor:pointer;">← Retour</button>
+                        <button onclick="sAllerEtape3('${provider}')" style="flex:2;padding:11px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;">Suivant →</button>
                     </div>
                 </div>
 
                 <!-- ÉTAPE 3 : Formation -->
                 <div id="sStep3" style="display:none;padding:26px 24px;">
                     <p style="font-size:0.82rem;color:#777;margin-bottom:4px;">Étape 3 sur 3</p>
-                    <p style="font-weight:700;font-size:1rem;color:#222;margin-bottom:10px;">Choisissez votre formation</p>
+                    <p style="font-weight:700;font-size:1rem;color:#222;margin-bottom:8px;">Choisissez votre formation</p>
                     <p style="color:#555;font-size:0.82rem;margin-bottom:14px;">Compte : <strong id="sUsernameDisplay3" style="color:${providerColor};"></strong></p>
                     <div style="margin-bottom:10px;">
                         <label style="font-size:0.8rem;font-weight:600;color:#444;display:block;margin-bottom:4px;">Niveau *</label>
@@ -2744,13 +2836,14 @@
                     </div>
                     <div id="sMsg3" style="display:none;color:#F44336;font-size:0.82rem;margin-bottom:10px;padding:8px 12px;background:#FFF3F3;border-radius:10px;"></div>
                     <div style="display:flex;gap:10px;margin-top:8px;">
-                        <button onclick="sRetourEtape2()" style="flex:1;padding:11px;background:transparent;color:#888;border:1.5px solid #ddd;border-radius:30px;cursor:pointer;font-size:0.88rem;">← Retour</button>
-                        <button onclick="sConfirmer('${provider}')" style="flex:2;padding:11px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;font-size:0.93rem;">✅ S'inscrire</button>
+                        <button onclick="sRetourEtape2()" style="flex:1;padding:11px;background:transparent;color:#888;border:1.5px solid #ddd;border-radius:30px;cursor:pointer;">← Retour</button>
+                        <button onclick="sConfirmer('${provider}')" style="flex:2;padding:11px;background:${providerColor};color:white;border:none;border-radius:30px;font-weight:700;cursor:pointer;">✅ S'inscrire</button>
                     </div>
                 </div>
             </div>`;
+
             document.body.appendChild(overlay);
-            setTimeout(()=>{ const el = document.getElementById('sUsername'); if(el) el.focus(); }, 100);
+            setTimeout(function() { var el = document.getElementById('sUsername'); if(el) el.focus(); }, 100);
         }
 
         function sTogglePwd(fieldId, btn) {
@@ -2770,15 +2863,20 @@
         function sAllerEtape2(provider) {
             const username = document.getElementById('sUsername').value.trim();
             const msg = document.getElementById('sMsg1');
-            if(!username || username.length < 2) {
-                msg.textContent = 'Veuillez saisir votre nom d\'utilisateur ' + (provider==='google'?'Google':'Facebook') + '.';
+            // Valider format email
+            if(!username || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username)) {
+                msg.textContent = 'Veuillez saisir une adresse email ' + (provider==='google'?'Gmail':'Facebook') + ' valide.';
                 msg.style.display = 'block'; return;
             }
-            // Vérifier si le nom d'utilisateur existe déjà
-            const alreadyExists = db.utilisateurs.find(u => u.username === username && u.source === provider)
-                || (db.comptes_pending||[]).find(p => p.username === username && p.source === provider);
+            if(provider === 'google' && !username.toLowerCase().endsWith('@gmail.com')) {
+                msg.textContent = "Veuillez utiliser une adresse @gmail.com pour l'inscription Google.";
+                msg.style.display = 'block'; return;
+            }
+            // Vérifier si l'email existe déjà
+            const alreadyExists = db.utilisateurs.find(u => u.email === username)
+                || (db.comptes_pending||[]).find(p => p.email === username);
             if(alreadyExists) {
-                msg.textContent = 'Ce nom d\'utilisateur est déjà utilisé. Connectez-vous plutôt.';
+                msg.textContent = 'Cet email est déjà enregistré. Connectez-vous plutôt.';
                 msg.style.display = 'block'; return;
             }
             msg.style.display = 'none';
@@ -2832,7 +2930,7 @@
         }
 
         function sConfirmer(provider) {
-            const username = document.getElementById('sUsername').value.trim();
+            const email = document.getElementById('sUsername').value.trim();
             const pwd = document.getElementById('sPassword').value;
             const niveau = document.getElementById('sNiveau').value;
             const formationId = parseInt(document.getElementById('sFormation').value) || null;
@@ -2840,38 +2938,38 @@
             if(!niveau) { msg.textContent='Veuillez choisir un niveau.'; msg.style.display='block'; return; }
             if(!formationId) { msg.textContent='Veuillez choisir une formation.'; msg.style.display='block'; return; }
             const providerName = provider === 'google' ? 'Google' : 'Facebook';
-            // Construire nom/prénom depuis le username
-            const parts = username.replace(/[._\-\d]/g,' ').trim().split(' ').filter(Boolean);
-            const prenom = parts[0] ? parts[0].charAt(0).toUpperCase()+parts[0].slice(1) : username;
+            // Extraire nom/prénom depuis la partie locale de l'email
+            const localPart = email.split('@')[0];
+            const parts = localPart.replace(/[._\-\d]/g,' ').trim().split(' ').filter(Boolean);
+            const prenom = parts[0] ? parts[0].charAt(0).toUpperCase()+parts[0].slice(1) : 'Utilisateur';
             const nom = parts.slice(1).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ') || providerName;
-            // Email simulé depuis le username
-            const emailSimule = username.toLowerCase().replace(/\s+/g,'') + (provider==='google'?'@gmail.com':'@facebook.com');
             if(!db.comptes_pending) db.comptes_pending = [];
-            const pendingId = 'p_' + Date.now();
             db.comptes_pending.push({
-                id: pendingId, nom, prenom,
-                email: emailSimule,
-                username: username,
+                id: 'p_'+Date.now(),
+                nom, prenom,
+                email,           // vrai email Gmail saisi
+                username: email, // identifiant = email réel
                 password: pwd,
                 niveau, formationId,
                 source: provider,
                 dateInscription: new Date().toLocaleDateString('fr-FR')
             });
             db.inscriptions.push({
-                id: generateId(db.inscriptions), nom, prenom,
-                email: emailSimule,
-                username: username,
+                id: generateId(db.inscriptions),
+                nom, prenom, email,
+                username: email,
                 niveau, formationId,
                 date: new Date().toISOString().split('T')[0],
                 statut: 'en_attente',
-                password: pwd
+                password: pwd,
+                source: provider
             });
-            // Notification en attente (sera affichée à la connexion)
-            ajouterNotification(emailSimule, `Votre inscription via ${providerName} est en attente de validation par l'administrateur.`, 'info');
+            // Notification dans l'app : compte inactif, en attente
+            ajouterNotification(email, `⏳ Votre compte ${providerName} (${email}) a bien été créé et est en attente de validation par l'administrateur. Vous recevrez un email dès activation.`, 'info');
             save();
             document.getElementById('socialOverlay').remove();
             closeModal('inscriptionModal');
-            showToast(`✅ Inscription via ${providerName} envoyée ! Vous serez notifié(e) dès validation.`);
+            showToast(`✅ Inscription via ${providerName} envoyée ! Vérifiez votre Gmail dès validation.`);
         }
 
         function confirmSocialSignup(provider) { sConfirmer(provider); }
@@ -2894,7 +2992,7 @@
                     <p style="color:#666;font-size:0.85rem;margin-bottom:18px;">Entrez votre nom d'utilisateur et mot de passe ${providerName}</p>
                     <div style="position:relative;margin-bottom:12px;">
                         <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#aaa;">👤</span>
-                        <input id="socialLoginUsername" type="text" placeholder="Nom d'utilisateur ${providerName}" autocomplete="username"
+                        <input id="socialLoginUsername" type="text" placeholder="Adresse email ${providerName}" autocomplete="username"
                             style="width:100%;padding:11px 14px 11px 34px;border:2px solid #e0e0e0;border-radius:12px;font-size:0.9rem;box-sizing:border-box;outline:none;transition:border 0.2s;"
                             onfocus="this.style.borderColor='${providerColor}'" onblur="this.style.borderColor='#e0e0e0'"
                             onkeydown="if(event.key==='Enter') document.getElementById('socialLoginPwd').focus()">
@@ -2923,11 +3021,11 @@
             const msgEl = document.getElementById('socialLoginMsg');
             if(!username) { msgEl.textContent="Veuillez saisir votre nom d'utilisateur."; msgEl.style.cssText='display:block;color:#F44336;background:#FFF3F3;padding:8px 12px;border-radius:10px;'; return; }
             if(!pwd) { msgEl.textContent='Veuillez saisir votre mot de passe.'; msgEl.style.cssText='display:block;color:#F44336;background:#FFF3F3;padding:8px 12px;border-radius:10px;'; return; }
-            // Construire email simulé
-            const emailSimule = username.toLowerCase().replace(/\s+/g,'') + (provider==='google'?'@gmail.com':'@facebook.com');
+            // L'identifiant est l'email réel
+            const emailSimule = username; // username field now holds real email
             // Check pending
             const isPending = (db.comptes_pending||[]).find(p =>
-                (p.username === username || p.email === emailSimule) && p.source === provider && p.password === pwd);
+                p.email === username && p.source === provider && p.password === pwd);
             if(isPending) {
                 msgEl.innerHTML='⏳ Votre compte est en attente de validation par l\'administrateur.<br><small>Vous serez notifié(e) dès son activation.</small>';
                 msgEl.style.cssText='display:block;color:#FF9800;background:#FFF8E1;padding:8px 12px;border-radius:10px;'; return;
